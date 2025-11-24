@@ -16,3 +16,11 @@ export * from './core/physics/CollisionSystem.js';
 
 // Replay
 export * from './core/replay/InputRecorder.js';
+
+// State Management
+export * from './core/state/Command.js';
+export * from './core/state/GameState.js';
+
+// Network
+export * from './core/network/RingBuffer.js';
+export * from './core/network/StateChecksum.js';
