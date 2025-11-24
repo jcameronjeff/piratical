@@ -24,8 +24,6 @@ export class SpatialHash {
     this.entities = new Map();
   }
 
-
-
   /**
    * Get all cell keys that an AABB overlaps
    */
