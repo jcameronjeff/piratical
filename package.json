@@ -1,0 +1,41 @@
+{
+  "name": "piratical",
+  "version": "0.1.0",
+  "description": "Architecture-first deterministic multiplayer pirate platformer",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "lint": "eslint src/**/*.ts",
+    "example": "npx tsx examples/simple-simulation.ts",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "platformer",
+    "multiplayer",
+    "deterministic",
+    "game"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.10.6",
+    "@typescript-eslint/eslint-plugin": "^6.17.0",
+    "@typescript-eslint/parser": "^6.17.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  },
+  "dependencies": {
+    "pixi.js": "^7.3.2"
+  }
+}
