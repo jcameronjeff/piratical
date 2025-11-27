@@ -1,0 +1,322 @@
+import { LevelData } from '../types';
+
+export const CAMPAIGN_LEVELS: LevelData[] = [
+  {
+    id: 1,
+    name: "Shipwreck Shore",
+    width: 3000,
+    height: 600,
+    background: 0x1a3a52,
+    spawnPoint: { x: 50, y: 400 },
+    goalPosition: { x: 2900, y: 420 },
+    platforms: [
+      // ===== SECTION 1: Safe Beach Start =====
+      // Main ground - broken into sections with small gaps
+      { x: 0, y: 500, w: 400, h: 100 },
+      // Intro stepping stones (easy jumps)
+      { x: 180, y: 420, w: 80, h: 20 },
+      { x: 300, y: 360, w: 100, h: 20 },
+      
+      // ===== SECTION 2: First Gap & Platforms =====
+      { x: 450, y: 500, w: 250, h: 100 },
+      { x: 500, y: 400, w: 100, h: 20 },
+      { x: 550, y: 300, w: 80, h: 20 },  // High platform with doubloon
+      
+      // ===== SECTION 3: Crab Introduction Area =====
+      { x: 750, y: 500, w: 350, h: 100 },
+      { x: 800, y: 380, w: 120, h: 20 },
+      { x: 950, y: 320, w: 100, h: 20 },
+      
+      // ===== SECTION 4: Shipwreck Debris (varied heights) =====
+      // Gap before shipwreck
+      { x: 1150, y: 500, w: 300, h: 100 },
+      // Tilted debris platforms
+      { x: 1180, y: 420, w: 60, h: 20 },
+      { x: 1280, y: 350, w: 80, h: 20 },
+      { x: 1350, y: 280, w: 100, h: 20 },  // High treasure
+      { x: 1380, y: 420, w: 70, h: 20 },
+      
+      // ===== SECTION 5: Spike Introduction =====
+      { x: 1500, y: 500, w: 400, h: 100 },
+      // Platforms to go OVER spikes
+      { x: 1550, y: 400, w: 100, h: 20 },
+      { x: 1700, y: 350, w: 120, h: 20 },
+      { x: 1850, y: 400, w: 100, h: 20 },
+      
+      // ===== SECTION 6: Enemy Gauntlet =====
+      { x: 1950, y: 500, w: 350, h: 100 },
+      { x: 2000, y: 380, w: 100, h: 20 },
+      { x: 2150, y: 320, w: 120, h: 20 },
+      
+      // ===== SECTION 7: Final Challenge =====
+      // Gap with pit
+      { x: 2350, y: 500, w: 200, h: 100 },
+      { x: 2400, y: 400, w: 80, h: 20 },
+      { x: 2480, y: 320, w: 70, h: 20 },
+      
+      // ===== SECTION 8: Treasure Island =====
+      { x: 2600, y: 500, w: 400, h: 100 },
+      { x: 2650, y: 400, w: 100, h: 20 },
+      { x: 2750, y: 320, w: 120, h: 20 },
+      { x: 2850, y: 420, w: 150, h: 20 },  // Goal platform
+    ],
+    doubloons: [
+      // Section 1 - Easy pickups
+      { x: 210, y: 380 },
+      { x: 340, y: 320 },
+      
+      // Section 2 - Reward for climbing
+      { x: 540, y: 360 },
+      { x: 575, y: 260 },  // High reward
+      
+      // Section 3 - Near first crab (risk/reward)
+      { x: 850, y: 340 },
+      { x: 985, y: 280 },
+      
+      // Section 4 - Shipwreck treasures
+      { x: 1310, y: 310 },
+      { x: 1385, y: 240 },  // Top of debris
+      
+      // Section 5 - Above spikes (teaches safe route)
+      { x: 1590, y: 360 },
+      { x: 1750, y: 310 },
+      { x: 1885, y: 360 },
+      
+      // Section 6 - Enemy area
+      { x: 2040, y: 340 },
+      { x: 2195, y: 280 },
+      
+      // Section 7 - Final jump rewards
+      { x: 2435, y: 360 },
+      { x: 2510, y: 280 },
+      
+      // Section 8 - Victory doubloons
+      { x: 2795, y: 280 },
+      { x: 2700, y: 360 },
+    ],
+    enemies: [
+      // First crab - simple patrol on flat ground (teaches enemy mechanic)
+      { x: 850, y: 468, patrolWidth: 200 },
+      
+      // Second crab - on platform (teaches platform enemies)
+      { x: 2050, y: 348, patrolWidth: 80 },
+      
+      // Third crab - ground patrol in gauntlet
+      { x: 2100, y: 468, patrolWidth: 250 },
+      
+      // Final crab - guarding treasure area
+      { x: 2700, y: 468, patrolWidth: 150 },
+    ],
+    spikes: [
+      // First spike pit - clearly visible, easy to jump over or use platforms
+      { x: 1600, y: 480, w: 90 },
+      
+      // Second spike section - requires platform use
+      { x: 1750, y: 480, w: 90 },
+      
+      // Small spike trap before final area
+      { x: 2550, y: 480, w: 45 },
+    ],
+    requiredDoubloons: 0,
+    // Sword chest - floating above the debris section, jump up from platform at y:420
+    swordChest: { x: 1210, y: 340 },
+  },
+  {
+    id: 2,
+    name: "Skull Cave",
+    width: 1400,
+    height: 600,
+    background: 0x1a1a2e,
+    spawnPoint: { x: 50, y: 400 },
+    goalPosition: { x: 1300, y: 420 },
+    platforms: [
+      // Ground sections with gaps
+      { x: 0, y: 500, w: 300, h: 100 },
+      { x: 400, y: 500, w: 200, h: 100 },
+      { x: 700, y: 500, w: 300, h: 100 },
+      { x: 1100, y: 500, w: 300, h: 100 },
+      // Upper platforms
+      { x: 150, y: 380, w: 100, h: 20 },
+      { x: 350, y: 300, w: 150, h: 20 },
+      { x: 550, y: 220, w: 100, h: 20 },
+      { x: 750, y: 300, w: 150, h: 20 },
+      { x: 950, y: 380, w: 120, h: 20 },
+      { x: 1150, y: 300, w: 100, h: 20 },
+    ],
+    doubloons: [
+      { x: 180, y: 340 },
+      { x: 400, y: 260 },
+      { x: 580, y: 180 },
+      { x: 800, y: 260 },
+      { x: 990, y: 340 },
+      { x: 1180, y: 260 },
+    ],
+    enemies: [
+      { x: 450, y: 468, patrolWidth: 150 },
+      { x: 800, y: 468, patrolWidth: 200 },
+    ],
+    spikes: [
+      { x: 300, y: 480, w: 100 },
+      { x: 600, y: 480, w: 100 },
+      { x: 1000, y: 480, w: 100 },
+    ],
+    requiredDoubloons: 2,
+    // Sword chest - above the middle section, jump from platform at y:300
+    swordChest: { x: 580, y: 140 },
+  },
+  {
+    id: 3,
+    name: "Treasure Galleon",
+    width: 1600,
+    height: 700,
+    background: 0x2d1b4e,
+    spawnPoint: { x: 50, y: 500 },
+    goalPosition: { x: 1500, y: 120 },
+    platforms: [
+      // Ship deck levels
+      { x: 0, y: 600, w: 400, h: 100 },
+      { x: 500, y: 600, w: 300, h: 100 },
+      { x: 900, y: 600, w: 700, h: 100 },
+      // Mid level
+      { x: 100, y: 480, w: 200, h: 20 },
+      { x: 400, y: 400, w: 150, h: 20 },
+      { x: 650, y: 480, w: 200, h: 20 },
+      { x: 950, y: 400, w: 150, h: 20 },
+      { x: 1200, y: 480, w: 200, h: 20 },
+      // Upper level
+      { x: 200, y: 300, w: 120, h: 20 },
+      { x: 450, y: 220, w: 150, h: 20 },
+      { x: 700, y: 300, w: 120, h: 20 },
+      { x: 900, y: 220, w: 150, h: 20 },
+      { x: 1150, y: 300, w: 150, h: 20 },
+      // Top level - treasure room
+      { x: 550, y: 140, w: 200, h: 20 },
+      { x: 850, y: 140, w: 150, h: 20 },
+      { x: 1100, y: 140, w: 200, h: 20 },
+      { x: 1400, y: 140, w: 200, h: 20 },
+    ],
+    doubloons: [
+      { x: 180, y: 440 },
+      { x: 450, y: 360 },
+      { x: 720, y: 440 },
+      { x: 1000, y: 360 },
+      { x: 240, y: 260 },
+      { x: 500, y: 180 },
+      { x: 750, y: 260 },
+      { x: 950, y: 180 },
+      { x: 1200, y: 260 },
+      { x: 630, y: 100 },
+      { x: 900, y: 100 },
+      { x: 1180, y: 100 },
+    ],
+    enemies: [
+      { x: 150, y: 568, patrolWidth: 300 },
+      { x: 600, y: 568, patrolWidth: 200 },
+      { x: 1100, y: 568, patrolWidth: 400 },
+      { x: 700, y: 268, patrolWidth: 80 },
+    ],
+    spikes: [
+      { x: 400, y: 580, w: 100 },
+      { x: 800, y: 580, w: 100 },
+    ],
+    requiredDoubloons: 5,
+    // Sword chest - mid-level on the ship, jump from platform at y:400
+    swordChest: { x: 730, y: 320 },
+  },
+  {
+    id: 4,
+    name: "Kraken's Lair",
+    width: 1800,
+    height: 800,
+    background: 0x0d1b2a,
+    spawnPoint: { x: 50, y: 650 },
+    goalPosition: { x: 1700, y: 70 },
+    platforms: [
+      // Bottom level - underwater cave feeling
+      { x: 0, y: 700, w: 300, h: 100 },
+      { x: 400, y: 700, w: 200, h: 100 },
+      { x: 700, y: 700, w: 250, h: 100 },
+      { x: 1050, y: 700, w: 200, h: 100 },
+      { x: 1350, y: 700, w: 450, h: 100 },
+      // Floating platforms
+      { x: 150, y: 580, w: 100, h: 20 },
+      { x: 350, y: 500, w: 120, h: 20 },
+      { x: 550, y: 580, w: 100, h: 20 },
+      { x: 750, y: 500, w: 120, h: 20 },
+      { x: 950, y: 420, w: 100, h: 20 },
+      { x: 1150, y: 500, w: 120, h: 20 },
+      { x: 1350, y: 580, w: 100, h: 20 },
+      { x: 1550, y: 500, w: 120, h: 20 },
+      // Mid level
+      { x: 100, y: 400, w: 150, h: 20 },
+      { x: 350, y: 320, w: 120, h: 20 },
+      { x: 600, y: 400, w: 150, h: 20 },
+      { x: 850, y: 320, w: 120, h: 20 },
+      { x: 1100, y: 400, w: 150, h: 20 },
+      { x: 1350, y: 320, w: 120, h: 20 },
+      { x: 1600, y: 400, w: 150, h: 20 },
+      // Upper level
+      { x: 200, y: 220, w: 120, h: 20 },
+      { x: 450, y: 150, w: 150, h: 20 },
+      { x: 700, y: 220, w: 120, h: 20 },
+      { x: 950, y: 150, w: 150, h: 20 },
+      { x: 1200, y: 220, w: 120, h: 20 },
+      { x: 1450, y: 150, w: 150, h: 20 },
+      // Goal platform
+      { x: 1650, y: 100, w: 150, h: 20 },
+    ],
+    doubloons: [
+      { x: 180, y: 540 },
+      { x: 380, y: 460 },
+      { x: 580, y: 540 },
+      { x: 780, y: 460 },
+      { x: 980, y: 380 },
+      { x: 1180, y: 460 },
+      { x: 140, y: 360 },
+      { x: 380, y: 280 },
+      { x: 650, y: 360 },
+      { x: 880, y: 280 },
+      { x: 1140, y: 360 },
+      { x: 1380, y: 280 },
+      { x: 240, y: 180 },
+      { x: 500, y: 110 },
+      { x: 740, y: 180 },
+      { x: 1000, y: 110 },
+      { x: 1240, y: 180 },
+      { x: 1500, y: 110 },
+      { x: 1700, y: 60 },
+    ],
+    enemies: [
+      { x: 100, y: 668, patrolWidth: 200 },
+      { x: 500, y: 668, patrolWidth: 150 },
+      { x: 800, y: 668, patrolWidth: 180 },
+      { x: 1150, y: 668, patrolWidth: 150 },
+      { x: 1500, y: 668, patrolWidth: 300 },
+      { x: 400, y: 288, patrolWidth: 80 },
+      { x: 900, y: 288, patrolWidth: 80 },
+      { x: 1400, y: 288, patrolWidth: 80 },
+    ],
+    spikes: [
+      { x: 300, y: 680, w: 100 },
+      { x: 600, y: 680, w: 100 },
+      { x: 950, y: 680, w: 100 },
+      { x: 1250, y: 680, w: 100 },
+    ],
+    requiredDoubloons: 10,
+    // Sword chest - in the mid section, jump from platform at y:420
+    swordChest: { x: 980, y: 340 },
+  },
+];
+
+export function getLevelById(id: number): LevelData | undefined {
+  return CAMPAIGN_LEVELS.find(level => level.id === id);
+}
+
+export function getNextLevel(currentId: number): LevelData | undefined {
+  const currentIndex = CAMPAIGN_LEVELS.findIndex(level => level.id === currentId);
+  if (currentIndex >= 0 && currentIndex < CAMPAIGN_LEVELS.length - 1) {
+    return CAMPAIGN_LEVELS[currentIndex + 1];
+  }
+  return undefined;
+}
+

@@ -1,38 +1,52 @@
 import SAT from 'sat';
-import { GameState, PlayerState, Input, Entity } from '../types';
+import { GameState, PlayerState, Input, EntityType, LevelData } from '../types';
 
 // Constants for integer-based physics (x100)
 const SCALE = 100;
-const GRAVITY = 0.5 * SCALE;
-const JUMP_FORCE = -12 * SCALE;
-const MOVE_SPEED = 5 * SCALE;
-const MAX_FALL_SPEED = 15 * SCALE;
-const FRICTION = 0.8;
-// const AIR_RESISTANCE = 0.9;
-
-// Swimming constants
-// const WATER_GRAVITY = 0.1 * SCALE;
-// const SWIM_FORCE = -3 * SCALE;
-// const WATER_DRAG = 0.9;
-
-// Jump mechanics
-// const COYOTE_TIME = 5; // frames
-// const JUMP_BUFFER = 5; // frames
+const GRAVITY = 50; // pixels per frame^2 (scaled)
+const JUMP_VELOCITY = -1100; // initial jump velocity (scaled)
+const MOVE_SPEED = 400; // max horizontal speed (scaled)
+const MOVE_ACCEL = 80; // horizontal acceleration (scaled)
+const FRICTION = 0.85;
+const AIR_FRICTION = 0.95;
+const MAX_FALL_SPEED = 1200;
+const ATTACK_DURATION = 25; // frames the attack animation lasts
+const ATTACK_COOLDOWN = 20; // frames before can attack again
+const ATTACK_RANGE = 50; // pixels in front of player (sword reach)
 
 export class PhysicsEngine {
   private obstacles: SAT.Box[];
+  private levelWidth: number = 800;
+  private levelHeight: number = 600;
+  private currentLevel: LevelData | null = null;
 
   constructor() {
     this.obstacles = [];
-    // Initialize some static map obstacles for now
-    this.createMap();
   }
 
-  private createMap() {
-    // Create a floor
-    this.obstacles.push(new SAT.Box(new SAT.Vector(0, 500 * SCALE), 800 * SCALE, 100 * SCALE));
+  public loadLevel(level: LevelData) {
+    this.obstacles = [];
+    this.currentLevel = level;
+    this.levelWidth = level.width;
+    this.levelHeight = level.height;
+
+    for (const platform of level.platforms) {
+      this.obstacles.push(
+        new SAT.Box(
+          new SAT.Vector(platform.x * SCALE, platform.y * SCALE),
+          platform.w * SCALE,
+          platform.h * SCALE
+        )
+      );
+    }
+  }
+
+  public createDefaultMap() {
+    this.obstacles = [];
+    this.levelWidth = 800;
+    this.levelHeight = 600;
     
-    // Create some platforms
+    this.obstacles.push(new SAT.Box(new SAT.Vector(0, 500 * SCALE), 800 * SCALE, 100 * SCALE));
     this.obstacles.push(new SAT.Box(new SAT.Vector(200 * SCALE, 400 * SCALE), 200 * SCALE, 20 * SCALE));
     this.obstacles.push(new SAT.Box(new SAT.Vector(500 * SCALE, 300 * SCALE), 200 * SCALE, 20 * SCALE));
   }
@@ -41,79 +55,273 @@ export class PhysicsEngine {
     return this.obstacles;
   }
 
-  public step(state: GameState, inputs: Map<string, Input>) {
-    state.players.forEach((player) => {
-      const input = inputs.get(player.id);
-      if (input) {
-        this.updatePlayer(player, input, state.entities);
-      }
-    });
-    
-    // Update entities/projectiles if any
+  public getLevelWidth(): number {
+    return this.levelWidth;
   }
 
-  private updatePlayer(player: PlayerState, input: Input, _entities: Entity[]) {
-    // Apply inputs
+  public getLevelHeight(): number {
+    return this.levelHeight;
+  }
+
+  public getCurrentLevel(): LevelData | null {
+    return this.currentLevel;
+  }
+
+  public step(state: GameState, inputs: Map<string, Input>): void {
+    state.players.forEach((player) => {
+      const input = inputs.get(player.id) || { frame: 0, left: false, right: false, jump: false, action: false };
+      this.updatePlayer(player, input, state);
+    });
+    
+    this.updateEntities(state);
+    this.checkEntityCollisions(state);
+  }
+
+  private updatePlayer(player: PlayerState, input: Input, state: GameState) {
+    // === ATTACK HANDLING ===
+    // Decrement cooldown
+    if (player.attackCooldown > 0) {
+      player.attackCooldown--;
+    }
+    
+    // Handle attack input - only if player has the sword!
+    if (input.action && player.attackCooldown === 0 && !player.isAttacking && player.hasSword) {
+      player.isAttacking = true;
+      player.attackFrame = ATTACK_DURATION;
+      player.attackCooldown = ATTACK_COOLDOWN;
+    }
+    
+    // Update attack animation
+    if (player.isAttacking) {
+      player.attackFrame--;
+      if (player.attackFrame <= 0) {
+        player.isAttacking = false;
+        player.attackFrame = 0;
+      }
+    }
+
+    // === HORIZONTAL MOVEMENT ===
     if (input.left) {
-      player.velocity.x -= MOVE_SPEED * 0.2;
+      player.velocity.x -= MOVE_ACCEL;
       player.facingRight = false;
     }
     if (input.right) {
-      player.velocity.x += MOVE_SPEED * 0.2;
+      player.velocity.x += MOVE_ACCEL;
       player.facingRight = true;
     }
 
     // Clamp horizontal speed
-    if (Math.abs(player.velocity.x) > MOVE_SPEED) {
-      player.velocity.x = Math.sign(player.velocity.x) * MOVE_SPEED;
+    player.velocity.x = Math.max(-MOVE_SPEED, Math.min(MOVE_SPEED, player.velocity.x));
+
+    // Apply friction
+    player.velocity.x *= player.isGrounded ? FRICTION : AIR_FRICTION;
+    if (Math.abs(player.velocity.x) < 10) player.velocity.x = 0;
+
+    // === JUMPING ===
+    // Allow jump if: on ground AND pressing jump AND wasn't pressing jump last frame
+    if (input.jump && player.isGrounded && !player.jumpHeld) {
+      player.velocity.y = JUMP_VELOCITY;
+      player.jumpHeld = true;
+    }
+    
+    // Track if jump key is held (to prevent repeated jumps while holding)
+    if (!input.jump) {
+      player.jumpHeld = false;
     }
 
-    // Friction / Drag
-    player.velocity.x *= FRICTION;
-    if (Math.abs(player.velocity.x) < 10) player.velocity.x = 0; // Threshold
-
-    // Gravity
+    // === GRAVITY ===
     player.velocity.y += GRAVITY;
-    if (player.velocity.y > MAX_FALL_SPEED) player.velocity.y = MAX_FALL_SPEED;
+    player.velocity.y = Math.min(player.velocity.y, MAX_FALL_SPEED);
 
-    // Jumping
-    if (input.jump && player.isGrounded) {
-      player.velocity.y = JUMP_FORCE;
-      player.isGrounded = false;
-    }
-
-    // Apply Velocity
+    // === APPLY MOVEMENT ===
     player.position.x += player.velocity.x;
     player.position.y += player.velocity.y;
 
-    // Collision Detection
+    // === COLLISION DETECTION ===
+    // Assume not grounded until proven otherwise
     player.isGrounded = false;
     
-    const playerBox = new SAT.Box(
+    const playerPoly = new SAT.Box(
       new SAT.Vector(player.position.x, player.position.y),
       player.width * SCALE,
       player.height * SCALE
-    );
+    ).toPolygon();
 
-    // Check Map Obstacles
     for (const obstacle of this.obstacles) {
       const response = new SAT.Response();
-      if (SAT.testPolygonPolygon(playerBox.toPolygon(), obstacle.toPolygon(), response)) {
-        // Resolve collision
+      const obstaclePoly = obstacle.toPolygon();
+      
+      if (SAT.testPolygonPolygon(playerPoly, obstaclePoly, response)) {
+        // Push player out of obstacle
         player.position.x -= response.overlapV.x;
         player.position.y -= response.overlapV.y;
+        
+        // Update polygon position for next check
+        playerPoly.pos.x = player.position.x;
+        playerPoly.pos.y = player.position.y;
 
-        if (response.overlapN.y < 0) {
+        // Check collision direction
+        // overlapN points from player to obstacle
+        if (response.overlapN.y > 0.7) {
+          // Hit ground (obstacle is below player)
           player.isGrounded = true;
           player.velocity.y = 0;
-        } else if (response.overlapN.y > 0) {
-          player.velocity.y = 0; // Hit head
+        } else if (response.overlapN.y < -0.7) {
+          // Hit ceiling (obstacle is above player)
+          player.velocity.y = Math.max(0, player.velocity.y);
+        }
+        
+        if (Math.abs(response.overlapN.x) > 0.7) {
+          // Hit wall
+          player.velocity.x = 0;
         }
       }
     }
 
-    // Boundaries (simple world bounds)
-    if (player.position.x < 0) player.position.x = 0;
-    if (player.position.x > 800 * SCALE) player.position.x = 800 * SCALE;
+    // === WORLD BOUNDARIES ===
+    if (player.position.x < 0) {
+      player.position.x = 0;
+      player.velocity.x = 0;
+    }
+    if (player.position.x > (this.levelWidth - player.width) * SCALE) {
+      player.position.x = (this.levelWidth - player.width) * SCALE;
+      player.velocity.x = 0;
+    }
+
+    // Fall off bottom = death
+    if (player.position.y > this.levelHeight * SCALE) {
+      state.levelFailed = true;
+    }
+  }
+
+  private updateEntities(state: GameState) {
+    for (const entity of state.entities) {
+      if (!entity.active) continue;
+
+      if (entity.type === EntityType.ENEMY && entity.velocity) {
+        entity.position.x += entity.velocity.x;
+      }
+    }
+  }
+
+  private checkEntityCollisions(state: GameState) {
+    state.players.forEach((player) => {
+      const playerBox = new SAT.Box(
+        new SAT.Vector(player.position.x, player.position.y),
+        player.width * SCALE,
+        player.height * SCALE
+      );
+
+      // First, check sword attacks (extended range) - this happens BEFORE body collision
+      if (player.isAttacking && player.attackFrame > ATTACK_DURATION - 15) {
+        // Create sword hitbox extending in front of player
+        const swordWidth = ATTACK_RANGE * SCALE;  // Use ATTACK_RANGE for sword reach
+        const swordHeight = 20 * SCALE;
+        
+        const swordX = player.facingRight 
+          ? player.position.x + (player.width * SCALE)
+          : player.position.x - swordWidth;
+        const swordY = player.position.y + (player.height * SCALE / 2) - (swordHeight / 2);
+        
+        const swordBox = new SAT.Box(
+          new SAT.Vector(swordX, swordY),
+          swordWidth,
+          swordHeight
+        );
+
+        for (const entity of state.entities) {
+          if (!entity.active || entity.type !== EntityType.ENEMY) continue;
+
+          const entityBox = new SAT.Box(
+            new SAT.Vector(entity.position.x * SCALE, entity.position.y * SCALE),
+            entity.width * SCALE,
+            entity.height * SCALE
+          );
+
+          if (SAT.testPolygonPolygon(swordBox.toPolygon(), entityBox.toPolygon())) {
+            // Enemy defeated by sword!
+            entity.active = false;
+          }
+        }
+      }
+
+      // Then check body collisions for other interactions
+      for (const entity of state.entities) {
+        if (!entity.active) continue;
+
+        const entityBox = new SAT.Box(
+          new SAT.Vector(entity.position.x * SCALE, entity.position.y * SCALE),
+          entity.width * SCALE,
+          entity.height * SCALE
+        );
+
+        if (SAT.testPolygonPolygon(playerBox.toPolygon(), entityBox.toPolygon())) {
+          switch (entity.type) {
+            case EntityType.DOUBLOON:
+              if (!entity.collected) {
+                entity.collected = true;
+                entity.active = false;
+                player.doubloons++;
+              }
+              break;
+
+            case EntityType.SPIKE:
+              state.levelFailed = true;
+              break;
+
+            case EntityType.ENEMY:
+              // Sword attack already handled above with extended range
+              // Check for stomp attack
+              if (player.velocity.y > 0 && player.position.y < entity.position.y * SCALE) {
+                // Stomp attack (like Mario)
+                entity.active = false;
+                player.velocity.y = JUMP_VELOCITY * 0.6;
+              } else if (!player.isAttacking) {
+                // Player hit by enemy (not attacking = vulnerable)
+                state.levelFailed = true;
+              }
+              // If attacking but didn't hit with sword, player is protected but doesn't kill enemy
+              break;
+
+            case EntityType.GOAL:
+              state.levelComplete = true;
+              break;
+
+            case EntityType.RUM:
+              if (!entity.collected) {
+                entity.collected = true;
+                entity.active = false;
+                player.health = Math.min(player.health + 1, 3);
+              }
+              break;
+
+            case EntityType.COCONUT:
+              if (!entity.collected) {
+                entity.collected = true;
+                entity.active = false;
+                player.sizeModifier = Math.min(player.sizeModifier + 0.25, 2);
+              }
+              break;
+
+            case EntityType.SWORD_CHEST:
+              // Player must hit from below (like Mario hitting a ? block)
+              // Check if player is below the chest and moving upward
+              if (!entity.collected && player.velocity.y < 0) {
+                const playerTop = player.position.y;
+                const chestBottom = (entity.position.y + entity.height) * SCALE;
+                
+                // Player's head is hitting the bottom of the chest
+                if (playerTop <= chestBottom && playerTop > chestBottom - 20 * SCALE) {
+                  entity.collected = true;
+                  player.hasSword = true;
+                  // Bounce player back down slightly
+                  player.velocity.y = Math.abs(player.velocity.y) * 0.3;
+                }
+              }
+              break;
+          }
+        }
+      }
+    });
   }
 }
