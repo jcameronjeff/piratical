@@ -715,75 +715,227 @@ export class MainMenu {
     
     switch(char.type) {
       case CharacterType.PIRATE:
+        // Captain Jack - Classic Swashbuckler with red coat, gold epaulets, tricorn hat
         return `
-          <svg viewBox="0 0 64 64" class="character-svg">
-            <!-- Pirate Captain -->
-            <rect x="12" y="28" width="40" height="28" fill="#e74c3c"/>
-            <rect x="20" y="32" width="6" height="20" fill="#fff"/>
-            <rect x="38" y="32" width="6" height="20" fill="#fff"/>
-            <rect x="12" y="52" width="18" height="8" fill="#2c1810"/>
-            <rect x="34" y="52" width="18" height="8" fill="#2c1810"/>
-            <circle cx="32" cy="16" r="14" fill="#DEB887"/>
-            <rect x="12" y="8" width="40" height="4" fill="#1a1a1a"/>
-            <circle cx="22" cy="14" r="5" fill="#1a1a1a"/>
-            <circle cx="42" cy="14" r="4" fill="#fff"/>
-            <circle cx="43" cy="14" r="2" fill="#000"/>
-            <rect x="20" y="24" width="24" height="6" fill="#3d2314"/>
-            <path d="M4,4 L60,4 L56,-8 L32,-20 L8,-8 Z" fill="#1a1a1a"/>
-            <rect x="16" y="-4" width="32" height="6" fill="#DAA520"/>
-            <circle cx="32" cy="-1" r="5" fill="#fff"/>
+          <svg viewBox="0 0 64 80" class="character-svg">
+            <!-- CAPTAIN JACK - Classic Swashbuckler -->
+            <!-- Red Military Coat -->
+            <rect x="10" y="32" width="44" height="28" fill="#B22222"/>
+            <!-- Coat lapels -->
+            <path d="M16,32 L32,42 L48,32 L44,32 L32,39 L20,32 Z" fill="#8B0000"/>
+            <!-- White shirt underneath -->
+            <path d="M22,32 L32,38 L42,32 Z" fill="#FFF8DC"/>
+            <!-- Gold buttons -->
+            <circle cx="32" cy="42" r="2" fill="#FFD700"/>
+            <circle cx="32" cy="50" r="2" fill="#FFD700"/>
+            <!-- Gold coat trim -->
+            <rect x="10" y="32" width="2" height="28" fill="#DAA520"/>
+            <rect x="52" y="32" width="2" height="28" fill="#DAA520"/>
+            <!-- Gold Epaulets -->
+            <ellipse cx="10" cy="35" rx="6" ry="4" fill="#FFD700"/>
+            <ellipse cx="54" cy="35" rx="6" ry="4" fill="#FFD700"/>
+            <!-- Epaulet fringe -->
+            <line x1="6" y1="38" x2="6" y2="44" stroke="#DAA520" stroke-width="1.5"/>
+            <line x1="9" y1="38" x2="9" y2="44" stroke="#DAA520" stroke-width="1.5"/>
+            <line x1="12" y1="38" x2="12" y2="44" stroke="#DAA520" stroke-width="1.5"/>
+            <line x1="52" y1="38" x2="52" y2="44" stroke="#DAA520" stroke-width="1.5"/>
+            <line x1="55" y1="38" x2="55" y2="44" stroke="#DAA520" stroke-width="1.5"/>
+            <line x1="58" y1="38" x2="58" y2="44" stroke="#DAA520" stroke-width="1.5"/>
+            <!-- Dark pants -->
+            <rect x="14" y="58" width="14" height="14" fill="#1a1a2e"/>
+            <rect x="36" y="58" width="14" height="14" fill="#1a1a2e"/>
+            <!-- Boots -->
+            <rect x="12" y="68" width="16" height="8" fill="#2d1810"/>
+            <rect x="36" y="68" width="16" height="8" fill="#2d1810"/>
+            <rect x="16" y="70" width="6" height="3" fill="#DAA520"/>
+            <rect x="42" y="70" width="6" height="3" fill="#DAA520"/>
+            <!-- Head -->
+            <circle cx="32" cy="18" r="14" fill="#DEB887"/>
+            <!-- Eye patch strap -->
+            <rect x="14" y="12" width="36" height="3" fill="#1a1a1a"/>
+            <!-- Eye patch -->
+            <circle cx="22" cy="16" r="5" fill="#1a1a1a"/>
+            <!-- Visible eye -->
+            <circle cx="42" cy="16" r="4" fill="#fff"/>
+            <circle cx="42" cy="16" r="2.5" fill="#4a3728"/>
+            <circle cx="43" cy="16" r="1.2" fill="#000"/>
+            <circle cx="41" cy="15" r="1" fill="#fff"/>
+            <!-- Thick dark beard -->
+            <path d="M18,22 Q32,36 46,22 L46,18 Q32,28 18,18 Z" fill="#1a1a1a"/>
+            <!-- Mustache -->
+            <ellipse cx="26" cy="22" rx="5" ry="2.5" fill="#1a1a1a"/>
+            <ellipse cx="38" cy="22" rx="5" ry="2.5" fill="#1a1a1a"/>
+            <!-- Gold earring -->
+            <circle cx="50" cy="20" r="3" fill="#FFD700"/>
+            <circle cx="50" cy="20" r="1.5" fill="#DEB887"/>
+            <!-- Tricorn Hat with skull & crossbones -->
+            <path d="M2,8 L62,8 L56,0 Q32,-16 8,0 Z" fill="#1a1a1a"/>
+            <!-- Hat curls -->
+            <path d="M2,8 Q0,0 10,4" fill="#2a2a2a"/>
+            <path d="M62,8 Q64,0 54,4" fill="#2a2a2a"/>
+            <!-- Gold hat band -->
+            <rect x="10" y="4" width="44" height="5" fill="#DAA520"/>
+            <!-- Skull -->
+            <circle cx="32" cy="0" r="6" fill="#fff"/>
+            <rect x="26" y="2" width="12" height="4" fill="#fff"/>
+            <!-- Skull eyes -->
+            <circle cx="29" cy="-1" r="2" fill="#1a1a1a"/>
+            <circle cx="35" cy="-1" r="2" fill="#1a1a1a"/>
+            <!-- Skull nose -->
+            <path d="M32,1 L30,4 L34,4 Z" fill="#1a1a1a"/>
+            <!-- Crossbones -->
+            <line x1="20" y1="-6" x2="44" y2="6" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+            <line x1="44" y1="-6" x2="20" y2="6" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+            <!-- Belt -->
+            <rect x="10" y="56" width="44" height="5" fill="#2d1810"/>
+            <rect x="26" y="55" width="12" height="7" fill="#FFD700"/>
+            <rect x="28" y="57" width="8" height="4" fill="#2d1810"/>
           </svg>
         `;
       case CharacterType.GIRL_PIRATE:
+        // Scarlet Rose - Fierce corsair with red hair, purple vest, pistol
         return `
-          <svg viewBox="0 0 64 64" class="character-svg">
-            <!-- Girl Pirate -->
-            <rect x="14" y="28" width="36" height="26" fill="#9b59b6"/>
-            <rect x="20" y="32" width="4" height="18" fill="#fff"/>
-            <rect x="40" y="32" width="4" height="18" fill="#fff"/>
-            <rect x="14" y="50" width="14" height="10" fill="#2c1810"/>
-            <rect x="36" y="50" width="14" height="10" fill="#2c1810"/>
-            <circle cx="32" cy="16" r="14" fill="#DEB887"/>
-            <ellipse cx="32" cy="4" rx="16" ry="8" fill="#c0392b"/>
-            <path d="M16,8 Q8,-6 20,-4 Q32,-2 32,6" fill="#c0392b"/>
-            <path d="M48,8 Q56,-6 44,-4 Q32,-2 32,6" fill="#c0392b"/>
-            <circle cx="24" cy="14" r="4" fill="#fff"/>
-            <circle cx="25" cy="14" r="2" fill="#2ecc71"/>
-            <circle cx="40" cy="14" r="4" fill="#fff"/>
-            <circle cx="41" cy="14" r="2" fill="#2ecc71"/>
-            <ellipse cx="32" cy="18" rx="2" ry="1" fill="#ffb6c1"/>
-            <path d="M26,22 Q32,26 38,22" stroke="#c0392b" stroke-width="2" fill="none"/>
-            <circle cx="46" cy="16" r="5" fill="#DAA520"/>
-            <circle cx="18" cy="16" r="5" fill="#DAA520"/>
+          <svg viewBox="0 0 64 80" class="character-svg">
+            <!-- SCARLET ROSE - Fierce Corsair -->
+            <!-- White blouse base -->
+            <rect x="14" y="32" width="36" height="24" fill="#FFF8F0"/>
+            <!-- Purple vest/corset -->
+            <path d="M14,36 L18,32 L46,32 L50,36 L50,54 L14,54 Z" fill="#6B2D5C"/>
+            <!-- Vest lacing -->
+            <line x1="28" y1="36" x2="36" y2="40" stroke="#FFD700" stroke-width="1"/>
+            <line x1="28" y1="44" x2="36" y2="48" stroke="#FFD700" stroke-width="1"/>
+            <!-- Blouse ruffles -->
+            <ellipse cx="32" cy="33" rx="8" ry="3" fill="#fff"/>
+            <!-- Dark leather pants -->
+            <rect x="14" y="54" width="14" height="16" fill="#2c1810"/>
+            <rect x="36" y="54" width="14" height="16" fill="#2c1810"/>
+            <!-- Tall boots -->
+            <rect x="12" y="64" width="16" height="12" fill="#4a3020"/>
+            <rect x="36" y="64" width="16" height="12" fill="#4a3020"/>
+            <rect x="12" y="62" width="16" height="5" fill="#5a4030"/>
+            <rect x="36" y="62" width="16" height="5" fill="#5a4030"/>
+            <rect x="18" y="64" width="5" height="3" fill="#DAA520"/>
+            <rect x="42" y="64" width="5" height="3" fill="#DAA520"/>
+            <!-- Head -->
+            <circle cx="32" cy="18" r="14" fill="#F5DEB3"/>
+            <!-- Flowing red hair - main volume -->
+            <ellipse cx="32" cy="6" rx="18" ry="12" fill="#CC3300"/>
+            <!-- Left hair waves -->
+            <path d="M10,8 Q0,20 6,36 Q10,44 16,50 Q10,38 12,28 Q8,18 10,8" fill="#CC3300"/>
+            <path d="M14,10 Q6,24 10,40 Q12,32 14,10" fill="#CC3300"/>
+            <!-- Right hair waves -->
+            <path d="M54,8 Q64,20 58,36 Q54,44 48,50 Q54,38 52,28 Q56,18 54,8" fill="#CC3300"/>
+            <path d="M50,10 Q58,24 54,40 Q52,32 50,10" fill="#CC3300"/>
+            <!-- Hair highlights -->
+            <ellipse cx="26" cy="6" rx="5" ry="4" fill="#FF6633" fill-opacity="0.6"/>
+            <ellipse cx="38" cy="5" rx="4" ry="3" fill="#FF6633" fill-opacity="0.6"/>
+            <!-- Eyes - fierce and determined -->
+            <ellipse cx="24" cy="16" rx="4" ry="3.5" fill="#fff"/>
+            <ellipse cx="40" cy="16" rx="4" ry="3.5" fill="#fff"/>
+            <!-- Dark green eyes -->
+            <circle cx="24" cy="16" r="2.5" fill="#2E5D4E"/>
+            <circle cx="40" cy="16" r="2.5" fill="#2E5D4E"/>
+            <circle cx="24" cy="16" r="1.2" fill="#000"/>
+            <circle cx="40" cy="16" r="1.2" fill="#000"/>
+            <!-- Eye highlights -->
+            <circle cx="23" cy="15" r="0.8" fill="#fff"/>
+            <circle cx="39" cy="15" r="0.8" fill="#fff"/>
+            <!-- Defined eyebrows -->
+            <line x1="18" y1="11" x2="28" y2="11" stroke="#8B4513" stroke-width="2"/>
+            <line x1="36" y1="11" x2="46" y2="11" stroke="#8B4513" stroke-width="2"/>
+            <!-- Nose -->
+            <ellipse cx="32" cy="21" rx="2" ry="1.5" fill="#E8C8A8"/>
+            <!-- Full red lips -->
+            <ellipse cx="32" cy="26" rx="4" ry="2" fill="#B33333"/>
+            <ellipse cx="30" cy="25" rx="2" ry="0.8" fill="#FF6666" fill-opacity="0.5"/>
+            <!-- Rosy cheeks -->
+            <circle cx="16" cy="22" r="3" fill="#FFB6C1" fill-opacity="0.4"/>
+            <circle cx="48" cy="22" r="3" fill="#FFB6C1" fill-opacity="0.4"/>
+            <!-- Gold earrings -->
+            <circle cx="10" cy="24" r="3" fill="#FFD700"/>
+            <circle cx="54" cy="24" r="3" fill="#FFD700"/>
+            <!-- Pistol in hand (left side) -->
+            <rect x="-4" y="42" width="18" height="4" fill="#4a4a4a"/>
+            <circle cx="-4" cy="44" r="2.5" fill="#3a3a3a"/>
+            <path d="M8,44 L12,52 L16,52 L14,44" fill="#5D4037"/>
+            <rect x="4" y="40" width="4" height="5" fill="#DAA520"/>
+            <!-- Brown leather glove -->
+            <rect x="2" y="38" width="10" height="16" fill="#5D4037"/>
+            <circle cx="8" cy="55" r="4" fill="#5D4037"/>
+            <!-- Belt -->
+            <rect x="10" y="52" width="44" height="4" fill="#4a3020"/>
+            <circle cx="32" cy="54" r="4" fill="#FFD700"/>
+            <circle cx="32" cy="54" r="2" fill="#DAA520"/>
           </svg>
         `;
       case CharacterType.OCTOPUS:
+        // Inky Pete - Mischievous purple octopus
         return `
-          <svg viewBox="0 0 64 72" class="character-svg octopus-svg">
-            <!-- Pirate Octopus -->
-            <ellipse cx="32" cy="20" rx="24" ry="18" fill="#8e44ad"/>
-            <!-- Tentacles -->
-            <path d="M8,32 Q4,48 12,56 Q16,62 20,56" stroke="#8e44ad" stroke-width="8" fill="none" stroke-linecap="round"/>
-            <path d="M20,36 Q16,52 22,60 Q26,66 30,58" stroke="#8e44ad" stroke-width="8" fill="none" stroke-linecap="round"/>
-            <path d="M32,38 Q32,54 32,62 Q32,68 36,62" stroke="#8e44ad" stroke-width="8" fill="none" stroke-linecap="round"/>
-            <path d="M44,36 Q48,52 42,60 Q38,66 34,58" stroke="#8e44ad" stroke-width="8" fill="none" stroke-linecap="round"/>
-            <path d="M56,32 Q60,48 52,56 Q48,62 44,56" stroke="#8e44ad" stroke-width="8" fill="none" stroke-linecap="round"/>
-            <!-- Suction cups -->
-            <circle cx="12" cy="48" r="2" fill="#9b59b6"/>
-            <circle cx="20" cy="52" r="2" fill="#9b59b6"/>
-            <circle cx="32" cy="54" r="2" fill="#9b59b6"/>
-            <circle cx="44" cy="52" r="2" fill="#9b59b6"/>
-            <circle cx="52" cy="48" r="2" fill="#9b59b6"/>
-            <!-- Eyes -->
-            <circle cx="22" cy="18" r="7" fill="#fff"/>
-            <circle cx="23" cy="18" r="4" fill="#000"/>
-            <circle cx="42" cy="18" r="7" fill="#fff"/>
-            <circle cx="43" cy="18" r="4" fill="#000"/>
-            <circle cx="42" cy="16" r="6" fill="#1a1a1a"/>
-            <!-- Pirate Hat -->
-            <path d="M8,8 L56,8 L52,0 L32,-12 L12,0 Z" fill="#1a1a1a"/>
-            <rect x="16" y="2" width="32" height="5" fill="#DAA520"/>
+          <svg viewBox="0 0 64 80" class="character-svg octopus-svg">
+            <!-- INKY PETE - Mischievous Purple Octopus -->
+            <!-- Back tentacles -->
+            <path d="M6,36 Q-4,52 4,64 Q10,72 16,66 Q12,56 14,46 Q10,40 10,36" fill="#5D3A6E"/>
+            <path d="M58,36 Q68,52 60,64 Q54,72 48,66 Q52,56 50,46 Q54,40 54,36" fill="#5D3A6E"/>
+            <!-- Back tentacle suckers -->
+            <circle cx="6" cy="56" r="2.5" fill="#E8D4F0"/>
+            <circle cx="58" cy="56" r="2.5" fill="#E8D4F0"/>
+            <!-- Main bulbous body -->
+            <ellipse cx="32" cy="24" rx="24" ry="20" fill="#7B4B94"/>
+            <!-- Body highlight -->
+            <ellipse cx="24" cy="16" rx="12" ry="8" fill="#9B6BB0" fill-opacity="0.5"/>
+            <!-- Body spots -->
+            <circle cx="18" cy="30" r="4" fill="#5D3A6E" fill-opacity="0.4"/>
+            <circle cx="46" cy="30" r="4" fill="#5D3A6E" fill-opacity="0.4"/>
+            <circle cx="32" cy="36" r="3" fill="#5D3A6E" fill-opacity="0.4"/>
+            <!-- Front tentacles -->
+            <path d="M12,40 Q4,56 12,68 Q18,76 22,70 Q18,60 20,50 Q16,44 16,40" fill="#7B4B94"/>
+            <path d="M20,42 Q14,58 22,70 Q28,78 32,72 Q28,62 28,52 Q24,46 24,42" fill="#7B4B94"/>
+            <path d="M40,42 Q46,58 40,70 Q34,78 30,72 Q34,62 34,52 Q38,46 38,42" fill="#7B4B94"/>
+            <path d="M52,40 Q60,56 52,68 Q46,76 42,70 Q46,60 44,50 Q48,44 48,40" fill="#7B4B94"/>
+            <!-- Front tentacle suckers -->
+            <circle cx="14" cy="58" r="2.5" fill="#E8D4F0"/>
+            <circle cx="18" cy="66" r="2" fill="#E8D4F0"/>
+            <circle cx="24" cy="60" r="2" fill="#E8D4F0"/>
+            <circle cx="26" cy="68" r="1.8" fill="#E8D4F0"/>
+            <circle cx="38" cy="60" r="2" fill="#E8D4F0"/>
+            <circle cx="36" cy="68" r="1.8" fill="#E8D4F0"/>
+            <circle cx="50" cy="58" r="2.5" fill="#E8D4F0"/>
+            <circle cx="46" cy="66" r="2" fill="#E8D4F0"/>
+            <!-- Large expressive eyes (yellow for mischief) -->
+            <ellipse cx="22" cy="22" rx="8" ry="10" fill="#FFFFE0"/>
+            <ellipse cx="42" cy="22" rx="8" ry="10" fill="#FFFFE0"/>
+            <!-- Yellow irises -->
+            <ellipse cx="24" cy="22" rx="5" ry="7" fill="#FFD700"/>
+            <ellipse cx="44" cy="22" rx="5" ry="7" fill="#FFD700"/>
+            <!-- Pupils -->
+            <ellipse cx="25" cy="22" rx="3" ry="5" fill="#000"/>
+            <ellipse cx="45" cy="22" rx="3" ry="5" fill="#000"/>
+            <!-- Eye shine -->
+            <circle cx="21" cy="18" r="2.5" fill="#fff"/>
+            <circle cx="41" cy="18" r="2.5" fill="#fff"/>
+            <circle cx="26" cy="26" r="1.5" fill="#fff"/>
+            <circle cx="46" cy="26" r="1.5" fill="#fff"/>
+            <!-- Mischievous eyelid shadows -->
+            <path d="M14,14 Q22,10 30,16 L30,18 Q22,14 14,18 Z" fill="#5D3A6E" fill-opacity="0.6"/>
+            <path d="M34,14 Q42,10 50,16 L50,18 Q42,14 34,18 Z" fill="#5D3A6E" fill-opacity="0.5"/>
+            <!-- Wide mischievous grin -->
+            <path d="M20,36 Q32,48 44,36 Q32,42 20,36" fill="#2D1B2E"/>
+            <!-- Teeth showing -->
+            <rect x="26" y="36" width="4" height="3" fill="#fff"/>
+            <rect x="34" y="36" width="4" height="3" fill="#fff"/>
+            <!-- Sly smile line -->
+            <path d="M44,36 Q48,34 52,35" stroke="#5D3A6E" stroke-width="2" fill="none"/>
+            <!-- Tilted pirate hat -->
+            <path d="M6,6 L58,10 L52,2 Q32,-12 12,0 Z" fill="#1a1a1a"/>
+            <!-- Gold hat band -->
+            <rect x="14" y="2" width="36" height="5" fill="#DAA520"/>
+            <!-- Skull emblem -->
             <circle cx="32" cy="4" r="4" fill="#fff"/>
+            <circle cx="30" cy="3" r="1" fill="#1a1a1a"/>
+            <circle cx="34" cy="3" r="1" fill="#1a1a1a"/>
+            <!-- Small crossbones -->
+            <line x1="24" y1="0" x2="40" y2="8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+            <line x1="40" y1="0" x2="24" y2="8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
           </svg>
         `;
       default:
