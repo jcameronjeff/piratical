@@ -493,6 +493,9 @@ export class GameRenderer {
   
   // Cached entity positions for particle effects
   private lastEntityPositions: Map<string, { x: number; y: number; active: boolean }> = new Map();
+  
+  // Track if renderer has been initialized
+  private initialized = false;
 
   constructor() {
     this.app = new PIXI.Application();
@@ -511,6 +514,11 @@ export class GameRenderer {
   }
 
   public async initialize(element: HTMLElement) {
+    // Prevent double initialization which causes duplicate canvases and sounds
+    if (this.initialized) {
+      return;
+    }
+    
     await this.app.init({ 
       width: 800, 
       height: 600, 
@@ -537,6 +545,8 @@ export class GameRenderer {
     
     // Hide effects initially (will show when level loads)
     this.hideEffects();
+    
+    this.initialized = true;
   }
 
   // Show/hide visual effects (useful when naval battle is active)

@@ -31,6 +31,7 @@ export class SoundManager {
   private sfxEnabled: boolean = true;
   private droneOscillator: OscillatorNode | null = null;
   private droneGain: GainNode | null = null;
+  private generatedMusicPlaying: boolean = false;
 
   constructor() {
     // Initialize audio context (will be created on first user interaction)
@@ -335,12 +336,17 @@ export class SoundManager {
    * Features driving 6/8 rhythm, D minor key, and swashbuckling orchestral feel
    */
   private startGeneratedMusic() {
+    // Prevent duplicate music instances
+    if (this.generatedMusicPlaying) return;
+    
     if (!this.audioContext) {
       this.initializeAudio();
       if (!this.audioContext) return;
     }
 
     if (!this.musicEnabled) return;
+    
+    this.generatedMusicPlaying = true;
 
     const ctx = this.audioContext;
     this.ensureAudioContext();
@@ -611,6 +617,8 @@ export class SoundManager {
       this.droneOscillator = null;
       this.droneGain = null;
     }
+    // Reset the playing flag so music can be restarted
+    this.generatedMusicPlaying = false;
     // Generated music is handled by setTimeout, so we just stop the flag
     // The music will naturally stop when musicEnabled is false
   }

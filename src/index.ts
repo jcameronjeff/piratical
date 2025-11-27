@@ -87,6 +87,12 @@ async function startCampaignLevel(levelId: number) {
     campaignMap = null;
   }
 
+  // Stop any existing game first to prevent duplicate sounds/listeners
+  if (currentGame) {
+    currentGame.stop();
+    currentGame = null;
+  }
+
   // Create renderer if needed
   if (!renderer) {
     renderer = new GameRenderer();
