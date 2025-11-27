@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { GameState, EntityType, EnemyType, LevelData, Entity } from '../types';
+import { GameState, EntityType, EnemyType, LevelData, Entity, CharacterType } from '../types';
 import { PhysicsEngine } from './physics';
 
 const SCALE = 100;
@@ -264,7 +264,7 @@ export class GameRenderer {
     state.players.forEach((player, id) => {
       let sprite = this.playerSprites.get(id);
       if (!sprite) {
-        sprite = this.createPlayerSprite(player.color);
+        sprite = this.createPlayerSprite(player.color, player.characterType);
         this.playerSprites.set(id, sprite);
         this.worldContainer.addChild(sprite);
       }
@@ -905,7 +905,18 @@ export class GameRenderer {
     }
   }
 
-  private createPlayerSprite(color: number): PIXI.Container {
+  private createPlayerSprite(color: number, characterType: CharacterType = CharacterType.PIRATE): PIXI.Container {
+    switch (characterType) {
+      case CharacterType.GIRL_PIRATE:
+        return this.createGirlPirateSprite(color);
+      case CharacterType.OCTOPUS:
+        return this.createOctopusSprite(color);
+      default:
+        return this.createClassicPirateSprite(color);
+    }
+  }
+
+  private createClassicPirateSprite(color: number): PIXI.Container {
     const container = new PIXI.Container();
     
     // === BODY (Shirt/Torso) ===
@@ -1084,6 +1095,419 @@ export class GameRenderer {
     container.addChild(belt);
     container.addChild(head);
     container.addChild(face);
+    container.addChild(hat);
+    container.addChild(swordArm);
+
+    return container;
+  }
+
+  private createGirlPirateSprite(color: number): PIXI.Container {
+    const container = new PIXI.Container();
+    
+    // === BODY (Corset/Blouse) ===
+    const body = new PIXI.Graphics();
+    body.fill(color);
+    body.rect(6, 14, 20, 14); // Torso
+    body.fill();
+    // Blouse details - lace trim
+    body.fill(0xFFFFFF);
+    body.rect(6, 14, 20, 3);
+    body.fill();
+    // Corset lacing
+    body.stroke({ color: 0xFFFFFF, width: 1 });
+    body.moveTo(16, 17);
+    body.lineTo(12, 20);
+    body.lineTo(16, 23);
+    body.lineTo(12, 26);
+    body.stroke();
+    body.moveTo(16, 17);
+    body.lineTo(20, 20);
+    body.lineTo(16, 23);
+    body.lineTo(20, 26);
+    body.stroke();
+    
+    // === SKIRT ===
+    const skirt = new PIXI.Graphics();
+    skirt.fill(0x2c1810); // Dark brown
+    skirt.moveTo(4, 26);
+    skirt.lineTo(28, 26);
+    skirt.lineTo(30, 36);
+    skirt.lineTo(2, 36);
+    skirt.closePath();
+    skirt.fill();
+    // Skirt ruffle
+    skirt.fill(0x3d2314);
+    skirt.rect(2, 34, 28, 2);
+    skirt.fill();
+    
+    // === BOOTS (Taller, more elegant) ===
+    const boots = new PIXI.Graphics();
+    boots.fill(0x1a1a1a);
+    boots.rect(6, 32, 8, 6);
+    boots.rect(18, 32, 8, 6);
+    boots.fill();
+    // Boot heels
+    boots.fill(0x8B4513);
+    boots.rect(8, 36, 4, 2);
+    boots.rect(20, 36, 4, 2);
+    boots.fill();
+    
+    // === HEAD ===
+    const head = new PIXI.Graphics();
+    head.fill(0xDEB887); // Skin tone
+    head.circle(16, 8, 10);
+    head.fill();
+    
+    // === HAIR ===
+    const hair = new PIXI.Graphics();
+    hair.fill(0xc0392b); // Red hair
+    // Hair volume on top
+    hair.ellipse(16, 2, 12, 8);
+    hair.fill();
+    // Long flowing hair on sides
+    hair.moveTo(4, 4);
+    hair.quadraticCurveTo(-2, 15, 6, 24);
+    hair.quadraticCurveTo(2, 15, 4, 4);
+    hair.fill();
+    hair.moveTo(28, 4);
+    hair.quadraticCurveTo(34, 15, 26, 24);
+    hair.quadraticCurveTo(30, 15, 28, 4);
+    hair.fill();
+    
+    // === FACE ===
+    const face = new PIXI.Graphics();
+    // Eyes (both visible, with makeup)
+    face.fill(0xFFFFFF);
+    face.circle(11, 7, 3);
+    face.circle(21, 7, 3);
+    face.fill();
+    // Green/emerald eyes
+    face.fill(0x2ecc71);
+    face.circle(12, 7, 2);
+    face.circle(22, 7, 2);
+    face.fill();
+    face.fill(0x000000);
+    face.circle(12, 7, 1);
+    face.circle(22, 7, 1);
+    face.fill();
+    // Eyelashes
+    face.stroke({ color: 0x000000, width: 1 });
+    face.moveTo(8, 5);
+    face.lineTo(10, 4);
+    face.moveTo(14, 4);
+    face.lineTo(12, 3);
+    face.moveTo(24, 5);
+    face.lineTo(22, 4);
+    face.moveTo(18, 4);
+    face.lineTo(20, 3);
+    face.stroke();
+    // Nose
+    face.fill(0xD2B48C);
+    face.ellipse(16, 10, 1.5, 1);
+    face.fill();
+    // Lips
+    face.fill(0xc0392b);
+    face.ellipse(16, 13, 3, 1.5);
+    face.fill();
+    // Rosy cheeks
+    face.fill({ color: 0xffb6c1, alpha: 0.5 });
+    face.circle(8, 10, 2);
+    face.circle(24, 10, 2);
+    face.fill();
+    
+    // === BANDANA ===
+    const bandana = new PIXI.Graphics();
+    bandana.fill(0xc0392b); // Matching red
+    bandana.rect(4, -2, 24, 5);
+    bandana.fill();
+    // Bandana knot tail
+    bandana.moveTo(28, 0);
+    bandana.quadraticCurveTo(36, 4, 32, 12);
+    bandana.quadraticCurveTo(30, 6, 28, 0);
+    bandana.fill();
+    
+    // === EARRINGS ===
+    const earrings = new PIXI.Graphics();
+    earrings.fill(0xDAA520); // Gold
+    earrings.circle(5, 12, 3);
+    earrings.circle(27, 12, 3);
+    earrings.fill();
+    earrings.fill(0xFFD700);
+    earrings.circle(5, 12, 1.5);
+    earrings.circle(27, 12, 1.5);
+    earrings.fill();
+    
+    // === SWORD ARM ===
+    const swordArm = new PIXI.Container();
+    swordArm.label = 'swordArm';
+    
+    const arm = new PIXI.Graphics();
+    arm.fill(0xDEB887);
+    arm.rect(0, -2, 12, 4);
+    arm.fill();
+    arm.fill(color);
+    arm.rect(-2, -3, 6, 6);
+    arm.fill();
+    
+    const sword = new PIXI.Graphics();
+    // Elegant cutlass
+    sword.fill(0xDAA520);
+    sword.rect(8, -3, 2, 7);
+    sword.fill();
+    sword.fill(0x4a3728);
+    sword.rect(6, -1, 4, 3);
+    sword.fill();
+    sword.fill(0xDAA520);
+    sword.circle(5, 0.5, 2);
+    sword.fill();
+    // Curved blade
+    sword.fill(0xC0C0C0);
+    sword.moveTo(10, -2);
+    sword.quadraticCurveTo(28, -6, 32, 0);
+    sword.lineTo(30, 2);
+    sword.quadraticCurveTo(26, -2, 10, 2);
+    sword.closePath();
+    sword.fill();
+    sword.fill({ color: 0xFFFFFF, alpha: 0.4 });
+    sword.moveTo(12, -1);
+    sword.quadraticCurveTo(26, -4, 30, 0);
+    sword.lineTo(28, 1);
+    sword.quadraticCurveTo(24, -2, 12, 0);
+    sword.closePath();
+    sword.fill();
+    
+    swordArm.addChild(arm);
+    swordArm.addChild(sword);
+    swordArm.x = 26;
+    swordArm.y = 18;
+    swordArm.rotation = -0.3;
+    
+    // === LEFT ARM ===
+    const leftArm = new PIXI.Graphics();
+    leftArm.fill(0xDEB887);
+    leftArm.rect(-4, 16, 5, 8);
+    leftArm.fill();
+    leftArm.fill(color);
+    leftArm.rect(-3, 14, 4, 4);
+    leftArm.fill();
+    leftArm.fill(0xDEB887);
+    leftArm.circle(-1, 25, 2.5);
+    leftArm.fill();
+    
+    // === BELT ===
+    const belt = new PIXI.Graphics();
+    belt.fill(0x8B4513);
+    belt.rect(4, 24, 24, 3);
+    belt.fill();
+    belt.fill(0xDAA520);
+    belt.circle(16, 25.5, 2.5);
+    belt.fill();
+
+    // Add all parts
+    container.addChild(leftArm);
+    container.addChild(skirt);
+    container.addChild(boots);
+    container.addChild(body);
+    container.addChild(belt);
+    container.addChild(hair);
+    container.addChild(head);
+    container.addChild(face);
+    container.addChild(bandana);
+    container.addChild(earrings);
+    container.addChild(swordArm);
+
+    return container;
+  }
+
+  private createOctopusSprite(color: number): PIXI.Container {
+    const container = new PIXI.Container();
+    
+    // === TENTACLES (Back layer) ===
+    const tentaclesBack = new PIXI.Graphics();
+    tentaclesBack.fill(color);
+    
+    // Back tentacles (will be behind body)
+    // Left back tentacle
+    tentaclesBack.moveTo(4, 22);
+    tentaclesBack.quadraticCurveTo(-4, 32, 0, 40);
+    tentaclesBack.quadraticCurveTo(-2, 36, 4, 32);
+    tentaclesBack.lineTo(8, 22);
+    tentaclesBack.closePath();
+    tentaclesBack.fill();
+    
+    // Right back tentacle
+    tentaclesBack.moveTo(28, 22);
+    tentaclesBack.quadraticCurveTo(36, 32, 32, 40);
+    tentaclesBack.quadraticCurveTo(34, 36, 28, 32);
+    tentaclesBack.lineTo(24, 22);
+    tentaclesBack.closePath();
+    tentaclesBack.fill();
+    
+    // Suction cups on back tentacles
+    tentaclesBack.fill(0x9b59b6);
+    tentaclesBack.circle(2, 34, 2);
+    tentaclesBack.circle(30, 34, 2);
+    tentaclesBack.fill();
+    
+    // === BODY (Head/Mantle) ===
+    const body = new PIXI.Graphics();
+    body.fill(color);
+    body.ellipse(16, 14, 14, 12);
+    body.fill();
+    // Body texture spots
+    body.fill({ color: 0x9b59b6, alpha: 0.5 });
+    body.circle(10, 18, 3);
+    body.circle(22, 18, 3);
+    body.circle(16, 22, 2);
+    body.fill();
+    
+    // === TENTACLES (Front layer) ===
+    const tentaclesFront = new PIXI.Graphics();
+    tentaclesFront.fill(color);
+    
+    // Front left tentacle
+    tentaclesFront.moveTo(6, 24);
+    tentaclesFront.quadraticCurveTo(2, 36, 8, 44);
+    tentaclesFront.quadraticCurveTo(6, 38, 10, 28);
+    tentaclesFront.lineTo(10, 24);
+    tentaclesFront.closePath();
+    tentaclesFront.fill();
+    
+    // Front center-left tentacle
+    tentaclesFront.moveTo(10, 24);
+    tentaclesFront.quadraticCurveTo(10, 38, 14, 46);
+    tentaclesFront.quadraticCurveTo(12, 40, 14, 28);
+    tentaclesFront.lineTo(14, 24);
+    tentaclesFront.closePath();
+    tentaclesFront.fill();
+    
+    // Front center-right tentacle
+    tentaclesFront.moveTo(18, 24);
+    tentaclesFront.quadraticCurveTo(22, 38, 18, 46);
+    tentaclesFront.quadraticCurveTo(20, 40, 18, 28);
+    tentaclesFront.lineTo(22, 24);
+    tentaclesFront.closePath();
+    tentaclesFront.fill();
+    
+    // Front right tentacle
+    tentaclesFront.moveTo(22, 24);
+    tentaclesFront.quadraticCurveTo(30, 36, 24, 44);
+    tentaclesFront.quadraticCurveTo(26, 38, 22, 28);
+    tentaclesFront.lineTo(26, 24);
+    tentaclesFront.closePath();
+    tentaclesFront.fill();
+    
+    // Suction cups on front tentacles
+    tentaclesFront.fill(0x9b59b6);
+    tentaclesFront.circle(8, 36, 2);
+    tentaclesFront.circle(12, 40, 2);
+    tentaclesFront.circle(20, 40, 2);
+    tentaclesFront.circle(24, 36, 2);
+    tentaclesFront.fill();
+    
+    // === EYES ===
+    const eyes = new PIXI.Graphics();
+    // Large octopus eyes
+    eyes.fill(0xFFFFFF);
+    eyes.ellipse(10, 12, 5, 6);
+    eyes.ellipse(22, 12, 5, 6);
+    eyes.fill();
+    // Pupils
+    eyes.fill(0x000000);
+    eyes.ellipse(11, 12, 3, 4);
+    eyes.ellipse(23, 12, 3, 4);
+    eyes.fill();
+    // Eye shine
+    eyes.fill(0xFFFFFF);
+    eyes.circle(9, 10, 1.5);
+    eyes.circle(21, 10, 1.5);
+    eyes.fill();
+    
+    // === PIRATE HAT ===
+    const hat = new PIXI.Graphics();
+    hat.fill(0x1a1a1a);
+    hat.moveTo(0, 6);
+    hat.lineTo(32, 6);
+    hat.lineTo(28, 0);
+    hat.lineTo(16, -10);
+    hat.lineTo(4, 0);
+    hat.closePath();
+    hat.fill();
+    // Hat band
+    hat.fill(0xDAA520);
+    hat.rect(6, 2, 20, 4);
+    hat.fill();
+    // Skull on hat
+    hat.fill(0xFFFFFF);
+    hat.circle(16, 3, 3);
+    hat.fill();
+    hat.fill(0x1a1a1a);
+    hat.circle(14.5, 2.5, 0.8);
+    hat.circle(17.5, 2.5, 0.8);
+    hat.fill();
+    
+    // === SWORD ARM (Using a tentacle) ===
+    const swordArm = new PIXI.Container();
+    swordArm.label = 'swordArm';
+    
+    // Tentacle arm
+    const tentacleArm = new PIXI.Graphics();
+    tentacleArm.fill(color);
+    tentacleArm.moveTo(0, -2);
+    tentacleArm.quadraticCurveTo(8, -4, 14, -2);
+    tentacleArm.lineTo(14, 3);
+    tentacleArm.quadraticCurveTo(8, 1, 0, 3);
+    tentacleArm.closePath();
+    tentacleArm.fill();
+    // Suction cups on arm
+    tentacleArm.fill(0x9b59b6);
+    tentacleArm.circle(4, 2, 1.5);
+    tentacleArm.circle(8, 2, 1.5);
+    tentacleArm.fill();
+    
+    // Cutlass
+    const sword = new PIXI.Graphics();
+    sword.fill(0xDAA520);
+    sword.rect(12, -3, 2, 7);
+    sword.fill();
+    sword.fill(0x4a3728);
+    sword.rect(10, -1, 4, 3);
+    sword.fill();
+    sword.fill(0xC0C0C0);
+    sword.moveTo(14, -2);
+    sword.lineTo(32, -1);
+    sword.lineTo(34, 0.5);
+    sword.lineTo(32, 2);
+    sword.lineTo(14, 3);
+    sword.closePath();
+    sword.fill();
+    sword.fill({ color: 0xFFFFFF, alpha: 0.4 });
+    sword.rect(15, -1, 16, 1.5);
+    sword.fill();
+    
+    swordArm.addChild(tentacleArm);
+    swordArm.addChild(sword);
+    swordArm.x = 26;
+    swordArm.y = 16;
+    swordArm.rotation = -0.3;
+    
+    // === EYE PATCH ===
+    const eyePatch = new PIXI.Graphics();
+    // Strap
+    eyePatch.fill(0x1a1a1a);
+    eyePatch.rect(4, 8, 24, 2);
+    eyePatch.fill();
+    // Patch over left eye
+    eyePatch.fill(0x1a1a1a);
+    eyePatch.ellipse(10, 12, 5, 6);
+    eyePatch.fill();
+
+    // Add all parts in z-order
+    container.addChild(tentaclesBack);
+    container.addChild(body);
+    container.addChild(tentaclesFront);
+    container.addChild(eyes);
+    container.addChild(eyePatch);
     container.addChild(hat);
     container.addChild(swordArm);
 
