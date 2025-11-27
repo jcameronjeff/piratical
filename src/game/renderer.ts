@@ -51,10 +51,6 @@ export class GameRenderer {
     return this.app.canvas;
   }
 
-  public getCanvas(): HTMLCanvasElement {
-    return this.app.canvas;
-  }
-
   public clearWorld() {
     // Clear all sprites
     this.playerSprites.forEach((sprite) => {
