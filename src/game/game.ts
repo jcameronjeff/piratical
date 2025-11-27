@@ -2,6 +2,7 @@ import PartySocket from "partysocket";
 import { PhysicsEngine } from "./physics";
 import { GameRenderer } from "./renderer";
 import { GameState, Input, SerializedGameState, PlayerState, CharacterType } from "../types";
+import { getSoundManager } from "../sound";
 
 const FPS = 60;
 const FRAME_TIME = 1000 / FPS;
@@ -194,6 +195,9 @@ export class Game {
     this.renderer.drawMap(this.physics);
     this.renderer.setupUI("Multiplayer Arena");
     
+    // Start background music
+    getSoundManager().playBackgroundMusic();
+    
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
     
@@ -206,6 +210,7 @@ export class Game {
     this.socket.close();
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
+    getSoundManager().stopBackgroundMusic();
   }
 
   private lastTime = 0;

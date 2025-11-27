@@ -1,9 +1,432 @@
 import * as PIXI from 'pixi.js';
-import { GameState, EntityType, EnemyType, LevelData, Entity, CharacterType } from '../types';
+import { GameState, EntityType, EnemyType, LevelData, Entity, CharacterType, PlayerState } from '../types';
 import { PhysicsEngine } from './physics';
 
 const SCALE = 100;
 
+// ===============================================
+// PARTICLE SYSTEM
+// ===============================================
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  size: number;
+  color: number;
+  alpha: number;
+  rotation: number;
+  rotationSpeed: number;
+  gravity: number;
+  type: 'dust' | 'spark' | 'splash' | 'sparkle' | 'trail' | 'smoke' | 'bubble' | 'leaf' | 'star';
+  scale: number;
+  shrink: boolean;
+}
+
+class ParticleSystem {
+  private particles: Particle[] = [];
+  private graphics: PIXI.Graphics;
+  private maxParticles = 500;
+
+  constructor() {
+    this.graphics = new PIXI.Graphics();
+  }
+
+  getGraphics(): PIXI.Graphics {
+    return this.graphics;
+  }
+
+  // Dust particles when landing or running
+  emitDust(x: number, y: number, count: number = 5, velocityX: number = 0) {
+    for (let i = 0; i < count; i++) {
+      this.particles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 3 + velocityX * 0.1,
+        vy: -Math.random() * 2 - 1,
+        life: 30 + Math.random() * 20,
+        maxLife: 50,
+        size: 3 + Math.random() * 4,
+        color: 0xd4a574,
+        alpha: 0.8,
+        rotation: 0,
+        rotationSpeed: 0,
+        gravity: 0.1,
+        type: 'dust',
+        scale: 1,
+        shrink: true
+      });
+    }
+  }
+
+  // Sparkle effect for collectibles
+  emitSparkle(x: number, y: number, count: number = 8, color: number = 0xFFD700) {
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const speed = 2 + Math.random() * 3;
+      this.particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 40 + Math.random() * 20,
+        maxLife: 60,
+        size: 2 + Math.random() * 3,
+        color,
+        alpha: 1,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.3,
+        gravity: 0,
+        type: 'sparkle',
+        scale: 1,
+        shrink: true
+      });
+    }
+  }
+
+  // Coin collection burst
+  emitCoinBurst(x: number, y: number) {
+    // Golden sparkles
+    this.emitSparkle(x, y, 12, 0xFFD700);
+    // Additional white twinkles
+    for (let i = 0; i < 6; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1 + Math.random() * 2;
+      this.particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1,
+        life: 20 + Math.random() * 15,
+        maxLife: 35,
+        size: 1 + Math.random() * 2,
+        color: 0xFFFFFF,
+        alpha: 1,
+        rotation: 0,
+        rotationSpeed: 0,
+        gravity: -0.05,
+        type: 'star',
+        scale: 1,
+        shrink: true
+      });
+    }
+  }
+
+  // Sword swing trail
+  emitSwordTrail(x: number, y: number, facingRight: boolean) {
+    for (let i = 0; i < 3; i++) {
+      const offsetX = facingRight ? 20 + i * 10 : -20 - i * 10;
+      this.particles.push({
+        x: x + offsetX,
+        y: y + (Math.random() - 0.5) * 20,
+        vx: facingRight ? 2 : -2,
+        vy: (Math.random() - 0.5) * 2,
+        life: 15 + Math.random() * 10,
+        maxLife: 25,
+        size: 8 - i * 2,
+        color: 0xE8E8FF,
+        alpha: 0.7,
+        rotation: Math.random() * Math.PI,
+        rotationSpeed: (Math.random() - 0.5) * 0.2,
+        gravity: 0,
+        type: 'trail',
+        scale: 1,
+        shrink: true
+      });
+    }
+  }
+
+  // Enemy defeat explosion
+  emitEnemyDefeat(x: number, y: number, color: number = 0xFF4500) {
+    // Main burst
+    for (let i = 0; i < 15; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2 + Math.random() * 4;
+      this.particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 2,
+        life: 40 + Math.random() * 30,
+        maxLife: 70,
+        size: 4 + Math.random() * 6,
+        color,
+        alpha: 1,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.4,
+        gravity: 0.15,
+        type: 'spark',
+        scale: 1,
+        shrink: true
+      });
+    }
+    // Smoke puff
+    for (let i = 0; i < 5; i++) {
+      this.particles.push({
+        x: x + (Math.random() - 0.5) * 20,
+        y: y + (Math.random() - 0.5) * 20,
+        vx: (Math.random() - 0.5) * 1,
+        vy: -Math.random() * 2 - 1,
+        life: 50 + Math.random() * 30,
+        maxLife: 80,
+        size: 15 + Math.random() * 10,
+        color: 0x444444,
+        alpha: 0.5,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.05,
+        gravity: -0.02,
+        type: 'smoke',
+        scale: 1,
+        shrink: false
+      });
+    }
+  }
+
+  // Water splash
+  emitSplash(x: number, y: number) {
+    for (let i = 0; i < 12; i++) {
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.8;
+      const speed = 3 + Math.random() * 5;
+      this.particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 40 + Math.random() * 20,
+        maxLife: 60,
+        size: 3 + Math.random() * 4,
+        color: 0x4FC3F7,
+        alpha: 0.8,
+        rotation: 0,
+        rotationSpeed: 0,
+        gravity: 0.2,
+        type: 'splash',
+        scale: 1,
+        shrink: true
+      });
+    }
+  }
+
+  // Ambient bubbles (underwater levels)
+  emitBubbles(x: number, y: number, count: number = 3) {
+    for (let i = 0; i < count; i++) {
+      this.particles.push({
+        x: x + (Math.random() - 0.5) * 20,
+        y,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: -1 - Math.random() * 2,
+        life: 80 + Math.random() * 60,
+        maxLife: 140,
+        size: 3 + Math.random() * 5,
+        color: 0xFFFFFF,
+        alpha: 0.4,
+        rotation: 0,
+        rotationSpeed: 0,
+        gravity: -0.01,
+        type: 'bubble',
+        scale: 1,
+        shrink: false
+      });
+    }
+  }
+
+  // Floating leaves/debris
+  emitLeaf(x: number, y: number) {
+    this.particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 2,
+      vy: Math.random() * 0.5,
+      life: 200 + Math.random() * 100,
+      maxLife: 300,
+      size: 6 + Math.random() * 4,
+      color: Math.random() > 0.5 ? 0x228B22 : 0x8B4513,
+      alpha: 0.7,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 0.1,
+      gravity: 0.02,
+      type: 'leaf',
+      scale: 1,
+      shrink: false
+    });
+  }
+
+  update() {
+    // Update all particles
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.life--;
+      
+      // Physics
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += p.gravity;
+      p.rotation += p.rotationSpeed;
+      
+      // Friction for some types
+      if (p.type === 'dust' || p.type === 'smoke') {
+        p.vx *= 0.98;
+        p.vy *= 0.98;
+      }
+
+      // Shrink over time
+      if (p.shrink) {
+        p.scale = p.life / p.maxLife;
+      }
+
+      // Fade out
+      p.alpha = Math.min(p.alpha, (p.life / p.maxLife) * 1.5);
+
+      // Remove dead particles
+      if (p.life <= 0) {
+        this.particles.splice(i, 1);
+      }
+    }
+
+    // Limit particles
+    while (this.particles.length > this.maxParticles) {
+      this.particles.shift();
+    }
+  }
+
+  render() {
+    this.graphics.clear();
+    
+    for (const p of this.particles) {
+      const size = p.size * p.scale;
+      if (size < 0.5) continue;
+
+      switch (p.type) {
+        case 'sparkle':
+        case 'star':
+          // Diamond/star shape
+          this.graphics.fill({ color: p.color, alpha: p.alpha });
+          this.graphics.moveTo(p.x, p.y - size);
+          this.graphics.lineTo(p.x + size * 0.5, p.y);
+          this.graphics.lineTo(p.x, p.y + size);
+          this.graphics.lineTo(p.x - size * 0.5, p.y);
+          this.graphics.closePath();
+          this.graphics.fill();
+          break;
+
+        case 'bubble':
+          // Hollow circle with highlight
+          this.graphics.stroke({ color: p.color, width: 1, alpha: p.alpha });
+          this.graphics.circle(p.x, p.y, size);
+          this.graphics.stroke();
+          this.graphics.fill({ color: 0xFFFFFF, alpha: p.alpha * 0.5 });
+          this.graphics.circle(p.x - size * 0.3, p.y - size * 0.3, size * 0.3);
+          this.graphics.fill();
+          break;
+
+        case 'trail':
+          // Elongated ellipse
+          this.graphics.fill({ color: p.color, alpha: p.alpha });
+          this.graphics.ellipse(p.x, p.y, size * 1.5, size * 0.5);
+          this.graphics.fill();
+          break;
+
+        case 'smoke':
+          // Soft circle
+          this.graphics.fill({ color: p.color, alpha: p.alpha * 0.5 });
+          this.graphics.circle(p.x, p.y, size);
+          this.graphics.fill();
+          break;
+
+        case 'leaf':
+          // Simple leaf shape
+          this.graphics.fill({ color: p.color, alpha: p.alpha });
+          this.graphics.ellipse(p.x, p.y, size, size * 0.4);
+          this.graphics.fill();
+          break;
+
+        default:
+          // Simple circle for dust, spark, splash
+          this.graphics.fill({ color: p.color, alpha: p.alpha });
+          this.graphics.circle(p.x, p.y, size);
+          this.graphics.fill();
+      }
+    }
+  }
+}
+
+// ===============================================
+// SCREEN EFFECTS
+// ===============================================
+class ScreenEffects {
+  private shakeIntensity = 0;
+  private shakeDecay = 0.9;
+  private vignetteGraphics: PIXI.Graphics;
+  private scanlineGraphics: PIXI.Graphics;
+  private glowContainer: PIXI.Container;
+  
+  constructor() {
+    this.vignetteGraphics = new PIXI.Graphics();
+    this.scanlineGraphics = new PIXI.Graphics();
+    this.glowContainer = new PIXI.Container();
+  }
+
+  getVignette(): PIXI.Graphics { return this.vignetteGraphics; }
+  getScanlines(): PIXI.Graphics { return this.scanlineGraphics; }
+  getGlowContainer(): PIXI.Container { return this.glowContainer; }
+
+  // Trigger screen shake
+  shake(intensity: number = 8) {
+    this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
+  }
+
+  // Update and get shake offset
+  updateShake(): { x: number; y: number } {
+    if (this.shakeIntensity < 0.5) {
+      this.shakeIntensity = 0;
+      return { x: 0, y: 0 };
+    }
+    
+    const offset = {
+      x: (Math.random() - 0.5) * this.shakeIntensity * 2,
+      y: (Math.random() - 0.5) * this.shakeIntensity * 2
+    };
+    
+    this.shakeIntensity *= this.shakeDecay;
+    return offset;
+  }
+
+  // Draw vignette overlay
+  drawVignette(width: number, height: number, intensity: number = 0.4) {
+    this.vignetteGraphics.clear();
+    
+    // Create radial gradient effect with multiple rings
+    const cx = width / 2;
+    const cy = height / 2;
+    const maxRadius = Math.sqrt(cx * cx + cy * cy);
+    
+    for (let i = 5; i >= 0; i--) {
+      const ratio = (i / 5);
+      const radius = maxRadius * (0.6 + ratio * 0.4);
+      const alpha = (1 - ratio) * intensity;
+      
+      this.vignetteGraphics.fill({ color: 0x000000, alpha });
+      this.vignetteGraphics.rect(0, 0, width, height);
+      this.vignetteGraphics.fill();
+      
+      // Cut out the inner circle
+      this.vignetteGraphics.fill({ color: 0x000000, alpha: 0 });
+      this.vignetteGraphics.circle(cx, cy, radius);
+      this.vignetteGraphics.cut();
+    }
+  }
+
+  // Subtle scanlines for retro effect (optional)
+  drawScanlines(width: number, height: number, opacity: number = 0.03) {
+    this.scanlineGraphics.clear();
+    this.scanlineGraphics.fill({ color: 0x000000, alpha: opacity });
+    
+    for (let y = 0; y < height; y += 4) {
+      this.scanlineGraphics.rect(0, y, width, 2);
+    }
+    this.scanlineGraphics.fill();
+  }
+}
+
+// ===============================================
+// MAIN RENDERER CLASS
+// ===============================================
 export class GameRenderer {
   private app: PIXI.Application;
   private playerSprites: Map<string, PIXI.Container>;
@@ -16,6 +439,29 @@ export class GameRenderer {
   private physics: PhysicsEngine | null = null;
   private camera: { x: number; y: number } = { x: 0, y: 0 };
   private worldContainer: PIXI.Container;
+  
+  // Visual Effects Systems
+  private particles: ParticleSystem;
+  private screenEffects: ScreenEffects;
+  private effectsContainer: PIXI.Container;
+  private foregroundEffects: PIXI.Container;
+  
+  // Animation state tracking
+  private playerAnimState: Map<string, {
+    wasGrounded: boolean;
+    lastVelocityY: number;
+    idleTime: number;
+    runPhase: number;
+    squashStretch: number;
+    attackTrailTimer: number;
+  }> = new Map();
+  
+  // Ambient effect timers
+  private ambientTimer = 0;
+  private wavePhase = 0;
+  
+  // Cached entity positions for particle effects
+  private lastEntityPositions: Map<string, { x: number; y: number; active: boolean }> = new Map();
 
   constructor() {
     this.app = new PIXI.Application();
@@ -25,6 +471,12 @@ export class GameRenderer {
     this.backgroundGraphics = new PIXI.Graphics();
     this.uiContainer = new PIXI.Container();
     this.worldContainer = new PIXI.Container();
+    
+    // Initialize effects systems
+    this.particles = new ParticleSystem();
+    this.screenEffects = new ScreenEffects();
+    this.effectsContainer = new PIXI.Container();
+    this.foregroundEffects = new PIXI.Container();
   }
 
   public async initialize(element: HTMLElement) {
@@ -39,8 +491,21 @@ export class GameRenderer {
     // Add containers in order (back to front)
     this.worldContainer.addChild(this.backgroundGraphics);
     this.worldContainer.addChild(this.obstacleGraphics);
+    
+    // Effects layer between world and UI
+    this.effectsContainer.addChild(this.particles.getGraphics());
+    this.worldContainer.addChild(this.effectsContainer);
+    
     this.app.stage.addChild(this.worldContainer);
+    
+    // Foreground effects (vignette, etc.) go on top
+    this.foregroundEffects.addChild(this.screenEffects.getVignette());
+    this.app.stage.addChild(this.foregroundEffects);
+    
     this.app.stage.addChild(this.uiContainer);
+    
+    // Draw initial vignette
+    this.screenEffects.drawVignette(800, 600, 0.35);
   }
 
   public setPhysics(physics: PhysicsEngine) {
@@ -49,6 +514,10 @@ export class GameRenderer {
 
   public getCanvas(): HTMLCanvasElement {
     return this.app.canvas;
+  }
+
+  public getApp(): PIXI.Application {
+    return this.app;
   }
 
   public clearWorld() {
@@ -241,6 +710,13 @@ export class GameRenderer {
   public render(state: GameState, localPlayerId: string) {
     const localPlayer = state.players.get(localPlayerId);
     
+    // Update ambient timer
+    this.ambientTimer++;
+    this.wavePhase += 0.02;
+    
+    // Update screen effects
+    const shakeOffset = this.screenEffects.updateShake();
+    
     // Update camera to follow local player
     if (localPlayer && this.physics) {
       const level = this.physics.getCurrentLevel();
@@ -256,11 +732,15 @@ export class GameRenderer {
         this.camera.y = Math.max(0, targetY);
       }
       
-      this.worldContainer.x = -this.camera.x;
-      this.worldContainer.y = -this.camera.y;
+      // Apply camera with shake
+      this.worldContainer.x = -this.camera.x + shakeOffset.x;
+      this.worldContainer.y = -this.camera.y + shakeOffset.y;
     }
 
-    // Render Players
+    // Emit ambient particles based on level
+    this.emitAmbientParticles();
+
+    // Render Players with enhanced animations
     state.players.forEach((player, id) => {
       let sprite = this.playerSprites.get(id);
       if (!sprite) {
@@ -269,16 +749,71 @@ export class GameRenderer {
         this.worldContainer.addChild(sprite);
       }
 
+      // Initialize animation state if needed
+      if (!this.playerAnimState.has(id)) {
+        this.playerAnimState.set(id, {
+          wasGrounded: true,
+          lastVelocityY: 0,
+          idleTime: 0,
+          runPhase: 0,
+          squashStretch: 1,
+          attackTrailTimer: 0
+        });
+      }
+      const animState = this.playerAnimState.get(id)!;
+
       // Update position
       if (sprite.pivot.x === 0 && sprite.pivot.y === 0) {
         sprite.pivot.set(player.width / 2, player.height / 2);
       }
       
-      sprite.x = (player.position.x / SCALE) + (player.width / 2);
-      sprite.y = (player.position.y / SCALE) + (player.height / 2);
+      const playerX = (player.position.x / SCALE) + (player.width / 2);
+      const playerY = (player.position.y / SCALE) + (player.height / 2);
+      sprite.x = playerX;
+      sprite.y = playerY;
       
-      // Flip sprite based on facing direction
-      sprite.scale.x = player.facingRight ? 1 : -1;
+      // === ENHANCED ANIMATIONS ===
+      
+      // Landing squash effect
+      if (player.isGrounded && !animState.wasGrounded && animState.lastVelocityY > 5) {
+        animState.squashStretch = 0.7;
+        // Emit landing dust
+        this.particles.emitDust(playerX, playerY + player.height / 2, 8, player.velocity.x / SCALE);
+      }
+      
+      // Recover from squash
+      animState.squashStretch += (1 - animState.squashStretch) * 0.15;
+      
+      // Running dust
+      if (player.isGrounded && Math.abs(player.velocity.x) > 100) {
+        animState.runPhase += 0.3;
+        if (animState.runPhase > Math.PI * 2) animState.runPhase -= Math.PI * 2;
+        
+        // Emit dust every few frames
+        if (this.ambientTimer % 8 === 0) {
+          this.particles.emitDust(
+            playerX + (player.facingRight ? -10 : 10),
+            playerY + player.height / 2 - 2,
+            2,
+            player.facingRight ? -1 : 1
+          );
+        }
+      } else {
+        animState.idleTime++;
+      }
+      
+      // Apply squash/stretch
+      const baseScaleX = player.facingRight ? 1 : -1;
+      sprite.scale.x = baseScaleX * (2 - animState.squashStretch);
+      sprite.scale.y = animState.squashStretch;
+      
+      // Idle breathing animation
+      if (Math.abs(player.velocity.x) < 50 && player.isGrounded && !player.isAttacking) {
+        const breathe = Math.sin(this.ambientTimer * 0.05) * 0.02;
+        sprite.scale.y += breathe;
+      }
+      
+      // Flip sprite based on facing direction (already applied above)
       
       // Show/hide and animate sword based on hasSword
       const swordArm = sprite.getChildByName('swordArm') as PIXI.Container;
@@ -291,11 +826,26 @@ export class GameRenderer {
           const swingProgress = 1 - (player.attackFrame / 25);
           // Swing from -30 degrees to +60 degrees
           swordArm.rotation = (-0.5 + swingProgress * 1.8);
+          
+          // Emit sword trail particles
+          animState.attackTrailTimer++;
+          if (animState.attackTrailTimer % 3 === 0) {
+            this.particles.emitSwordTrail(
+              playerX + (player.facingRight ? 20 : -20),
+              playerY,
+              player.facingRight
+            );
+          }
         } else {
           // Rest position
           swordArm.rotation = -0.3;
+          animState.attackTrailTimer = 0;
         }
       }
+      
+      // Update animation state for next frame
+      animState.wasGrounded = player.isGrounded;
+      animState.lastVelocityY = player.velocity.y / SCALE;
     });
 
     // Clean up disconnected players
@@ -303,14 +853,90 @@ export class GameRenderer {
       if (!state.players.has(id)) {
         this.worldContainer.removeChild(sprite);
         this.playerSprites.delete(id);
+        this.playerAnimState.delete(id);
       }
     }
 
-    // Render Entities
+    // Render Entities with effects
     this.renderEntities(state);
+    
+    // Update and render particles
+    this.particles.update();
+    this.particles.render();
+  }
+
+  // Trigger screen shake (call this when player takes damage or enemy is defeated)
+  public triggerShake(intensity: number = 8) {
+    this.screenEffects.shake(intensity);
+  }
+
+  // Emit particle effects for collectibles and enemies
+  public emitCollectEffect(x: number, y: number) {
+    this.particles.emitCoinBurst(x, y);
+  }
+
+  public emitDefeatEffect(x: number, y: number, color: number = 0xFF4500) {
+    this.particles.emitEnemyDefeat(x, y, color);
+    this.screenEffects.shake(4);
+  }
+
+  private emitAmbientParticles() {
+    if (!this.physics) return;
+    const level = this.physics.getCurrentLevel();
+    if (!level) return;
+
+    // Different ambient effects based on level
+    const levelId = level.id;
+    
+    // Spawn ambient particles occasionally
+    if (this.ambientTimer % 30 === 0) {
+      const spawnX = this.camera.x + Math.random() * 800;
+      const spawnY = this.camera.y + Math.random() * 600;
+      
+      if (levelId === 4) {
+        // Kraken's Lair - underwater bubbles
+        this.particles.emitBubbles(spawnX, spawnY + 400, 2);
+      } else if (levelId === 1) {
+        // Shipwreck Shore - occasional leaves/debris
+        if (Math.random() < 0.3) {
+          this.particles.emitLeaf(spawnX, this.camera.y - 20);
+        }
+      }
+    }
   }
 
   private renderEntities(state: GameState) {
+    // Track entity state changes for particle effects
+    for (const entity of state.entities) {
+      const lastPos = this.lastEntityPositions.get(entity.id);
+      const wasActive = lastPos?.active ?? true;
+      
+      // Detect enemy defeat
+      if (entity.type === EntityType.ENEMY && wasActive && !entity.active) {
+        const color = this.getEnemyColor(entity.enemyType);
+        this.emitDefeatEffect(entity.position.x + entity.width / 2, entity.position.y + entity.height / 2, color);
+      }
+      
+      // Detect doubloon collection
+      if (entity.type === EntityType.DOUBLOON && wasActive && !entity.active) {
+        this.particles.emitCoinBurst(entity.position.x + entity.width / 2, entity.position.y + entity.height / 2);
+      }
+      
+      // Detect sword collection
+      if (entity.type === EntityType.SWORD_CHEST && !lastPos && entity.collected) {
+        // First frame of collection
+        this.particles.emitSparkle(entity.position.x + entity.width / 2, entity.position.y, 20, 0xFFD700);
+        this.screenEffects.shake(6);
+      }
+      
+      // Update tracking
+      this.lastEntityPositions.set(entity.id, {
+        x: entity.position.x,
+        y: entity.position.y,
+        active: entity.active
+      });
+    }
+    
     // Clean up old entity sprites
     for (const [id, sprite] of this.entitySprites) {
       const entity = state.entities.find(e => e.id === id);
@@ -355,6 +981,65 @@ export class GameRenderer {
         sprite.x = entity.position.x;
         sprite.y = entity.position.y;
         
+        // === ENHANCED ENTITY ANIMATIONS ===
+        
+        // Doubloon bobbing and sparkle
+        if (entity.type === EntityType.DOUBLOON) {
+          sprite.y += Math.sin(this.ambientTimer * 0.08 + entity.position.x * 0.1) * 3;
+          sprite.rotation = Math.sin(this.ambientTimer * 0.05) * 0.1;
+          
+          // Occasional sparkle
+          if (this.ambientTimer % 60 === Math.floor(entity.position.x) % 60) {
+            this.particles.emitSparkle(
+              entity.position.x + entity.width / 2,
+              entity.position.y + entity.height / 2,
+              3,
+              0xFFD700
+            );
+          }
+        }
+        
+        // Sword chest glow pulsing
+        if (entity.type === EntityType.SWORD_CHEST && !entity.collected) {
+          const pulse = 0.9 + Math.sin(this.ambientTimer * 0.1) * 0.1;
+          sprite.scale.set(pulse, pulse);
+          
+          // Golden particles around chest
+          if (this.ambientTimer % 40 === 0) {
+            this.particles.emitSparkle(
+              entity.position.x + entity.width / 2 + (Math.random() - 0.5) * 20,
+              entity.position.y + entity.height / 2,
+              2,
+              0xFFD700
+            );
+          }
+        }
+        
+        // Goal treasure chest sparkle
+        if (entity.type === EntityType.GOAL) {
+          if (this.ambientTimer % 45 === 0) {
+            this.particles.emitSparkle(
+              entity.position.x + entity.width / 2,
+              entity.position.y + entity.height / 2,
+              4,
+              0xFFD700
+            );
+          }
+        }
+        
+        // Jellyfish pulsing
+        if (entity.type === EntityType.ENEMY && entity.enemyType === EnemyType.JELLYFISH) {
+          const pulse = 1 + Math.sin(this.ambientTimer * 0.15) * 0.1;
+          sprite.scale.y = pulse;
+        }
+        
+        // Cannonball trail
+        if (entity.type === EntityType.CANNONBALL) {
+          if (this.ambientTimer % 3 === 0) {
+            this.particles.emitDust(entity.position.x + entity.width / 2, entity.position.y + entity.height / 2, 2);
+          }
+        }
+        
         // Flip sprite based on facing direction for enemies
         if (entity.type === EntityType.ENEMY && entity.facingRight !== undefined) {
           sprite.scale.x = entity.facingRight ? 1 : -1;
@@ -380,9 +1065,30 @@ export class GameRenderer {
             this.worldContainer.addChild(sprite);
             sprite.x = entity.position.x;
             sprite.y = entity.position.y;
+            
+            // Emit ghost phase particles
+            if (!entity.isVisible) {
+              this.particles.emitSparkle(
+                entity.position.x + entity.width / 2,
+                entity.position.y + entity.height / 2,
+                6,
+                0x00FFFF
+              );
+            }
           }
         }
       }
+    }
+  }
+
+  private getEnemyColor(enemyType?: EnemyType): number {
+    switch (enemyType) {
+      case EnemyType.CRAB: return 0xFF4500;
+      case EnemyType.SEAGULL: return 0xF5F5F5;
+      case EnemyType.SKELETON: return 0xE8E8E8;
+      case EnemyType.JELLYFISH: return 0xFF69B4;
+      case EnemyType.GHOST: return 0x00FFFF;
+      default: return 0xFF4500;
     }
   }
 
@@ -1537,6 +2243,34 @@ export class GameRenderer {
         this.drawKrakensLairBackground(g, level);
         break;
     }
+    
+    // Add animated water layer for applicable levels
+    if (level.id === 1 || level.id === 4) {
+      this.drawAnimatedWater(g, level);
+    }
+  }
+
+  private drawAnimatedWater(g: PIXI.Graphics, level: LevelData) {
+    const width = level.width;
+    const height = level.height;
+    const waterY = height - 50;
+    
+    // Animated wave effect using wavePhase
+    g.fill({ color: 0x0077be, alpha: 0.4 });
+    
+    for (let x = 0; x < width + 40; x += 40) {
+      const waveOffset = Math.sin(this.wavePhase + x * 0.02) * 8;
+      g.circle(x, waterY + waveOffset, 25);
+    }
+    g.fill();
+    
+    // Foam on top of waves
+    g.fill({ color: 0xFFFFFF, alpha: 0.3 });
+    for (let x = 0; x < width + 40; x += 60) {
+      const waveOffset = Math.sin(this.wavePhase + x * 0.02) * 8;
+      g.ellipse(x + 20, waterY - 5 + waveOffset, 15, 4);
+    }
+    g.fill();
   }
 
   private drawShipwreckShoreBackground(g: PIXI.Graphics, level: LevelData) {

@@ -1,5 +1,6 @@
 import SAT from 'sat';
 import { GameState, PlayerState, Input, EntityType, EnemyType, LevelData } from '../types';
+import { getSoundManager, SoundEffect } from '../sound';
 
 // Constants for integer-based physics (x100)
 const SCALE = 100;
@@ -89,6 +90,7 @@ export class PhysicsEngine {
       player.isAttacking = true;
       player.attackFrame = ATTACK_DURATION;
       player.attackCooldown = ATTACK_COOLDOWN;
+      getSoundManager().playSound(SoundEffect.ATTACK);
     }
     
     // Update attack animation
@@ -122,6 +124,7 @@ export class PhysicsEngine {
     if (input.jump && player.isGrounded && !player.jumpHeld) {
       player.velocity.y = JUMP_VELOCITY;
       player.jumpHeld = true;
+      getSoundManager().playSound(SoundEffect.JUMP);
     }
     
     // Track if jump key is held (to prevent repeated jumps while holding)
@@ -247,6 +250,7 @@ export class PhysicsEngine {
           if (SAT.testPolygonPolygon(swordBox.toPolygon(), entityBox.toPolygon())) {
             // Enemy defeated by sword!
             entity.active = false;
+            getSoundManager().playSound(SoundEffect.ENEMY_DEFEAT);
           }
         }
       }
@@ -268,11 +272,13 @@ export class PhysicsEngine {
                 entity.collected = true;
                 entity.active = false;
                 player.doubloons++;
+                getSoundManager().playSound(SoundEffect.COLLECT_DOUBLOON);
               }
               break;
 
             case EntityType.SPIKE:
               state.levelFailed = true;
+              getSoundManager().playSound(SoundEffect.PLAYER_HIT);
               break;
 
             case EntityType.ENEMY:
@@ -288,6 +294,7 @@ export class PhysicsEngine {
                 // When visible, can only be killed with sword (not stomp)
                 if (!player.isAttacking) {
                   state.levelFailed = true;
+                  getSoundManager().playSound(SoundEffect.PLAYER_HIT);
                 }
                 // Sword kills handled above in the sword attack section
                 break;
@@ -297,6 +304,7 @@ export class PhysicsEngine {
               if (enemyType === EnemyType.CANNON_TURRET) {
                 // Cannons are indestructible - touching hurts player
                 state.levelFailed = true;
+                getSoundManager().playSound(SoundEffect.PLAYER_HIT);
                 break;
               }
               
@@ -305,11 +313,13 @@ export class PhysicsEngine {
                 if (player.isAttacking || (player.velocity.y > 0 && player.position.y < entity.position.y * SCALE)) {
                   // Can stomp or sword jellyfish
                   entity.active = false;
+                  getSoundManager().playSound(SoundEffect.ENEMY_DEFEAT);
                   if (player.velocity.y > 0) {
                     player.velocity.y = JUMP_VELOCITY * 0.6;
                   }
                 } else {
                   state.levelFailed = true;
+                  getSoundManager().playSound(SoundEffect.PLAYER_HIT);
                 }
                 break;
               }
@@ -320,10 +330,12 @@ export class PhysicsEngine {
               if (player.velocity.y > 0 && player.position.y < entity.position.y * SCALE) {
                 // Stomp attack (like Mario)
                 entity.active = false;
+                getSoundManager().playSound(SoundEffect.ENEMY_DEFEAT);
                 player.velocity.y = JUMP_VELOCITY * 0.6;
               } else if (!player.isAttacking) {
                 // Player hit by enemy (not attacking = vulnerable)
                 state.levelFailed = true;
+                getSoundManager().playSound(SoundEffect.PLAYER_HIT);
               }
               // If attacking but didn't hit with sword, player is protected but doesn't kill enemy
               break;
@@ -331,10 +343,12 @@ export class PhysicsEngine {
             case EntityType.CANNONBALL:
               // Cannonballs always hurt the player
               state.levelFailed = true;
+              getSoundManager().playSound(SoundEffect.PLAYER_HIT);
               break;
 
             case EntityType.GOAL:
               state.levelComplete = true;
+              getSoundManager().playSound(SoundEffect.LEVEL_COMPLETE);
               break;
 
             case EntityType.RUM:
@@ -364,6 +378,7 @@ export class PhysicsEngine {
                 if (playerTop <= chestBottom && playerTop > chestBottom - 20 * SCALE) {
                   entity.collected = true;
                   player.hasSword = true;
+                  getSoundManager().playSound(SoundEffect.COLLECT_SWORD);
                   // Bounce player back down slightly
                   player.velocity.y = Math.abs(player.velocity.y) * 0.3;
                 }

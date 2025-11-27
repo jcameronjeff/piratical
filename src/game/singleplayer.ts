@@ -2,6 +2,8 @@ import { PhysicsEngine } from "./physics";
 import { GameRenderer } from "./renderer";
 import { GameState, Input, EntityType, EnemyType, LevelData, CampaignProgress, CharacterType, Entity } from "../types";
 import { CAMPAIGN_LEVELS, getLevelById, getNextLevel } from "./levels";
+import { NavalBattle } from "./navalBattle";
+import { getSoundManager, SoundEffect } from "../sound";
 
 const FPS = 60;
 const FRAME_TIME = 1000 / FPS;
@@ -10,6 +12,7 @@ const SCALE = 100;
 export class SinglePlayerGame {
   private physics: PhysicsEngine;
   private renderer: GameRenderer;
+  private navalBattle: NavalBattle | null = null;
   
   private state: GameState;
   private progress: CampaignProgress;
@@ -20,6 +23,7 @@ export class SinglePlayerGame {
   private paused = false;
   private levelStartTime = 0;
   private characterType: CharacterType;
+  private inNavalBattle = false;
 
   // Input state
   private keys = {
@@ -112,17 +116,50 @@ export class SinglePlayerGame {
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
     
-    // Start at first unlocked level or continue from saved
-    await this.loadLevel(this.progress.currentLevel);
+    // Start background music
+    getSoundManager().playBackgroundMusic();
     
-    this.running = true;
-    this.loop();
+    // Initialize naval battle
+    this.navalBattle = new NavalBattle(this.renderer.getApp());
+    
+    // Start with a naval battle before the first level
+    const targetLevel = this.progress.currentLevel;
+    const level = getLevelById(targetLevel);
+    
+    await this.startNavalBattle(level?.name || 'Unknown Waters', true, async () => {
+      await this.loadLevel(targetLevel);
+      this.running = true;
+      this.loop();
+    });
+  }
+
+  private async startNavalBattle(levelName: string, isIntro: boolean, onComplete: () => void) {
+    this.inNavalBattle = true;
+    this.running = false;
+    
+    // Remove key listeners temporarily (naval battle has its own)
+    window.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('keyup', this.handleKeyUp);
+    
+    this.navalBattle?.start(levelName, isIntro, () => {
+      this.inNavalBattle = false;
+      // Re-add key listeners
+      window.addEventListener('keydown', this.handleKeyDown);
+      window.addEventListener('keyup', this.handleKeyUp);
+      onComplete();
+    });
   }
 
   public stop() {
     this.running = false;
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
+    getSoundManager().stopBackgroundMusic();
+    
+    // Clean up naval battle if active
+    if (this.navalBattle) {
+      this.navalBattle.stop();
+    }
   }
 
   public async loadLevel(levelId: number) {
@@ -356,7 +393,18 @@ export class SinglePlayerGame {
     await new Promise(resolve => setTimeout(resolve, 2500));
 
     if (nextLevel) {
-      await this.loadLevel(nextLevel.id);
+      // Stop the current game loop
+      this.running = false;
+      
+      // Clear the current level display
+      this.renderer.clearWorld();
+      
+      // Start naval battle before next level
+      await this.startNavalBattle(nextLevel.name, false, async () => {
+        await this.loadLevel(nextLevel.id);
+        this.running = true;
+        this.loop();
+      });
     } else {
       // Game complete!
       this.renderer.showMessage("🏴‍☠️ ADVENTURE COMPLETE! 🏴‍☠️\nYe be a true pirate!", 5000);
@@ -584,6 +632,8 @@ export class SinglePlayerGame {
       ? cannon.position.x + cannon.width 
       : cannon.position.x - 12;
     const spawnY = cannon.position.y + cannon.height * 0.4;
+    
+    getSoundManager().playSound(SoundEffect.CANNON_FIRE);
     
     this.state.entities.push({
       id: `cannonball_${Date.now()}_${Math.random()}`,
