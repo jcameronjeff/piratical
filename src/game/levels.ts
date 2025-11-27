@@ -4,11 +4,11 @@ export const CAMPAIGN_LEVELS: LevelData[] = [
   {
     id: 1,
     name: "Shipwreck Shore",
-    width: 3000,
+    width: 6000,
     height: 600,
     background: 0x1a3a52,
     spawnPoint: { x: 50, y: 400 },
-    goalPosition: { x: 2900, y: 420 },
+    goalPosition: { x: 5900, y: 420 },
     platforms: [
       // ===== SECTION 1: Safe Beach Start =====
       // Main ground - broken into sections with small gaps
@@ -48,17 +48,63 @@ export const CAMPAIGN_LEVELS: LevelData[] = [
       { x: 2000, y: 380, w: 100, h: 20 },
       { x: 2150, y: 320, w: 120, h: 20 },
       
-      // ===== SECTION 7: Final Challenge =====
-      // Gap with pit
+      // ===== SECTION 7: Rocky Outcrops =====
       { x: 2350, y: 500, w: 200, h: 100 },
       { x: 2400, y: 400, w: 80, h: 20 },
       { x: 2480, y: 320, w: 70, h: 20 },
       
-      // ===== SECTION 8: Treasure Island =====
-      { x: 2600, y: 500, w: 400, h: 100 },
+      // ===== SECTION 8: Tidal Pools =====
+      { x: 2600, y: 500, w: 300, h: 100 },
       { x: 2650, y: 400, w: 100, h: 20 },
       { x: 2750, y: 320, w: 120, h: 20 },
-      { x: 2850, y: 420, w: 150, h: 20 },  // Goal platform
+      { x: 2850, y: 400, w: 100, h: 20 },
+      
+      // ===== SECTION 9: Coral Reef Crossing =====
+      { x: 2950, y: 500, w: 250, h: 100 },
+      { x: 3000, y: 380, w: 90, h: 20 },
+      { x: 3120, y: 300, w: 100, h: 20 },
+      
+      // ===== SECTION 10: Sunken Ship Hull =====
+      { x: 3250, y: 500, w: 400, h: 100 },
+      { x: 3300, y: 420, w: 80, h: 20 },
+      { x: 3420, y: 350, w: 100, h: 20 },
+      { x: 3520, y: 280, w: 80, h: 20 },
+      { x: 3580, y: 400, w: 70, h: 20 },
+      
+      // ===== SECTION 11: Spike Gauntlet =====
+      { x: 3700, y: 500, w: 450, h: 100 },
+      { x: 3750, y: 400, w: 100, h: 20 },
+      { x: 3900, y: 340, w: 120, h: 20 },
+      { x: 4050, y: 400, w: 100, h: 20 },
+      
+      // ===== SECTION 12: Crab Colony =====
+      { x: 4200, y: 500, w: 400, h: 100 },
+      { x: 4250, y: 380, w: 110, h: 20 },
+      { x: 4400, y: 320, w: 100, h: 20 },
+      { x: 4530, y: 400, w: 80, h: 20 },
+      
+      // ===== SECTION 13: Lighthouse Approach =====
+      { x: 4650, y: 500, w: 300, h: 100 },
+      { x: 4700, y: 400, w: 90, h: 20 },
+      { x: 4820, y: 320, w: 100, h: 20 },
+      { x: 4900, y: 250, w: 80, h: 20 },
+      
+      // ===== SECTION 14: Treacherous Cliffs =====
+      { x: 5000, y: 500, w: 250, h: 100 },
+      { x: 5050, y: 400, w: 80, h: 20 },
+      { x: 5150, y: 320, w: 100, h: 20 },
+      { x: 5200, y: 420, w: 70, h: 20 },
+      
+      // ===== SECTION 15: Final Spike Run =====
+      { x: 5300, y: 500, w: 350, h: 100 },
+      { x: 5350, y: 390, w: 100, h: 20 },
+      { x: 5500, y: 330, w: 120, h: 20 },
+      
+      // ===== SECTION 16: Treasure Island =====
+      { x: 5700, y: 500, w: 300, h: 100 },
+      { x: 5750, y: 400, w: 100, h: 20 },
+      { x: 5850, y: 320, w: 120, h: 20 },
+      { x: 5900, y: 420, w: 100, h: 20 },  // Goal platform
     ],
     doubloons: [
       // Section 1 - Easy pickups
@@ -86,13 +132,49 @@ export const CAMPAIGN_LEVELS: LevelData[] = [
       { x: 2040, y: 340 },
       { x: 2195, y: 280 },
       
-      // Section 7 - Final jump rewards
+      // Section 7 - Rocky Outcrops
       { x: 2435, y: 360 },
       { x: 2510, y: 280 },
       
-      // Section 8 - Victory doubloons
-      { x: 2795, y: 280 },
+      // Section 8 - Tidal Pools
       { x: 2700, y: 360 },
+      { x: 2795, y: 280 },
+      
+      // Section 9 - Coral Reef
+      { x: 3035, y: 340 },
+      { x: 3155, y: 260 },
+      
+      // Section 10 - Sunken Ship Hull
+      { x: 3340, y: 380 },
+      { x: 3455, y: 310 },
+      { x: 3555, y: 240 },
+      
+      // Section 11 - Spike Gauntlet
+      { x: 3790, y: 360 },
+      { x: 3945, y: 300 },
+      { x: 4085, y: 360 },
+      
+      // Section 12 - Crab Colony
+      { x: 4295, y: 340 },
+      { x: 4435, y: 280 },
+      { x: 4560, y: 360 },
+      
+      // Section 13 - Lighthouse Approach
+      { x: 4735, y: 360 },
+      { x: 4855, y: 280 },
+      { x: 4930, y: 210 },
+      
+      // Section 14 - Treacherous Cliffs
+      { x: 5085, y: 360 },
+      { x: 5185, y: 280 },
+      
+      // Section 15 - Final Spike Run
+      { x: 3935, y: 350 },
+      { x: 5535, y: 290 },
+      
+      // Section 16 - Victory doubloons
+      { x: 5790, y: 360 },
+      { x: 5895, y: 280 },
     ],
     enemies: [
       // First crab - simple patrol on flat ground (teaches enemy mechanic)
@@ -104,8 +186,25 @@ export const CAMPAIGN_LEVELS: LevelData[] = [
       // Third crab - ground patrol in gauntlet
       { x: 2100, y: 468, patrolWidth: 250 },
       
-      // Final crab - guarding treasure area
+      // Tidal pools crab
       { x: 2700, y: 468, patrolWidth: 150 },
+      
+      // Sunken ship hull crab
+      { x: 3400, y: 468, patrolWidth: 200 },
+      
+      // Crab colony - multiple crabs
+      { x: 4300, y: 468, patrolWidth: 180 },
+      { x: 4450, y: 468, patrolWidth: 150 },
+      { x: 4290, y: 348, patrolWidth: 80 },
+      
+      // Lighthouse approach crab
+      { x: 4750, y: 468, patrolWidth: 200 },
+      
+      // Treacherous cliffs crab
+      { x: 5100, y: 468, patrolWidth: 150 },
+      
+      // Final treasure guardian
+      { x: 5800, y: 468, patrolWidth: 180 },
     ],
     spikes: [
       // First spike pit - clearly visible, easy to jump over or use platforms
@@ -114,8 +213,26 @@ export const CAMPAIGN_LEVELS: LevelData[] = [
       // Second spike section - requires platform use
       { x: 1750, y: 480, w: 90 },
       
-      // Small spike trap before final area
+      // Rocky outcrops spike
       { x: 2550, y: 480, w: 45 },
+      
+      // Coral reef spikes
+      { x: 3200, y: 480, w: 45 },
+      
+      // Spike gauntlet - extended section
+      { x: 3800, y: 480, w: 90 },
+      { x: 3950, y: 480, w: 90 },
+      { x: 4100, y: 480, w: 90 },
+      
+      // Lighthouse approach spike
+      { x: 4950, y: 480, w: 45 },
+      
+      // Final spike run
+      { x: 5400, y: 480, w: 90 },
+      { x: 5550, y: 480, w: 90 },
+      
+      // Guard spikes near treasure
+      { x: 5650, y: 480, w: 45 },
     ],
     requiredDoubloons: 0,
     // Sword chest - floating above the debris section, jump up from platform at y:420
