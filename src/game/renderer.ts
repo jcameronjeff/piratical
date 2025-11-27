@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { GameState, EntityType, LevelData } from '../types';
+import { GameState, EntityType, EnemyType, LevelData, Entity } from '../types';
 import { PhysicsEngine } from './physics';
 
 const SCALE = 100;
@@ -45,6 +45,10 @@ export class GameRenderer {
 
   public setPhysics(physics: PhysicsEngine) {
     this.physics = physics;
+  }
+
+  public getCanvas(): HTMLCanvasElement {
+    return this.app.canvas;
   }
 
   public clearWorld() {
@@ -342,7 +346,7 @@ export class GameRenderer {
         }
         sprite = this.entitySprites.get(spriteKey);
       } else if (!sprite) {
-        sprite = this.createEntitySprite(entity.type, entity.width, entity.height);
+        sprite = this.createEntitySprite(entity.type, entity.width, entity.height, entity);
         this.entitySprites.set(entity.id, sprite);
         this.worldContainer.addChild(sprite);
       }
@@ -350,6 +354,34 @@ export class GameRenderer {
       if (sprite) {
         sprite.x = entity.position.x;
         sprite.y = entity.position.y;
+        
+        // Flip sprite based on facing direction for enemies
+        if (entity.type === EntityType.ENEMY && entity.facingRight !== undefined) {
+          sprite.scale.x = entity.facingRight ? 1 : -1;
+          // Adjust pivot for proper flipping
+          if (sprite.scale.x === -1) {
+            sprite.pivot.x = entity.width;
+            sprite.x = entity.position.x + entity.width;
+          } else {
+            sprite.pivot.x = 0;
+          }
+        }
+        
+        // Update ghost visibility (recreate sprite if visibility changed)
+        if (entity.type === EntityType.ENEMY && entity.enemyType === EnemyType.GHOST) {
+          // For ghosts, we need to recreate the sprite when visibility changes
+          // Check by comparing alpha - this is a simple approach
+          if (Math.abs((sprite.alpha || 1) - 1) > 0.01 !== !entity.isVisible) {
+            // Visibility state changed, recreate sprite
+            this.worldContainer.removeChild(sprite);
+            this.entitySprites.delete(entity.id);
+            sprite = this.createEntitySprite(entity.type, entity.width, entity.height, entity);
+            this.entitySprites.set(entity.id, sprite);
+            this.worldContainer.addChild(sprite);
+            sprite.x = entity.position.x;
+            sprite.y = entity.position.y;
+          }
+        }
       }
     }
   }
@@ -385,7 +417,7 @@ export class GameRenderer {
     return g;
   }
 
-  private createEntitySprite(type: EntityType, width: number, height: number): PIXI.Graphics {
+  private createEntitySprite(type: EntityType, width: number, height: number, entity?: Entity): PIXI.Graphics {
     const g = new PIXI.Graphics();
 
     switch (type) {
@@ -414,23 +446,18 @@ export class GameRenderer {
         break;
 
       case EntityType.ENEMY:
-        // Crab enemy
-        g.fill(0xFF4500);
-        g.ellipse(width / 2, height / 2, width / 2, height / 3);
+        // Draw based on enemy type
+        this.drawEnemySprite(g, width, height, entity?.enemyType || EnemyType.CRAB, entity);
+        break;
+
+      case EntityType.CANNONBALL:
+        // Black cannonball
+        g.fill(0x1a1a1a);
+        g.circle(width / 2, height / 2, width / 2);
         g.fill();
-        // Eyes
-        g.fill(0xFFFFFF);
-        g.circle(width / 3, height / 3, 4);
-        g.circle(width * 2 / 3, height / 3, 4);
-        g.fill();
-        g.fill(0x000000);
-        g.circle(width / 3, height / 3, 2);
-        g.circle(width * 2 / 3, height / 3, 2);
-        g.fill();
-        // Claws
-        g.fill(0xFF6347);
-        g.circle(0, height / 2, 6);
-        g.circle(width, height / 2, 6);
+        // Shine
+        g.fill({ color: 0xffffff, alpha: 0.3 });
+        g.circle(width / 3, height / 3, width / 5);
         g.fill();
         break;
 
@@ -491,6 +518,391 @@ export class GameRenderer {
     }
 
     return g;
+  }
+
+  private drawEnemySprite(g: PIXI.Graphics, width: number, height: number, enemyType: EnemyType, entity?: Entity): void {
+    switch (enemyType) {
+      case EnemyType.CRAB:
+        this.drawCrabSprite(g, width, height);
+        break;
+      case EnemyType.SEAGULL:
+        this.drawSeagullSprite(g, width, height);
+        break;
+      case EnemyType.SKELETON:
+        this.drawSkeletonSprite(g, width, height, entity);
+        break;
+      case EnemyType.CANNON_TURRET:
+        this.drawCannonSprite(g, width, height, entity);
+        break;
+      case EnemyType.JELLYFISH:
+        this.drawJellyfishSprite(g, width, height);
+        break;
+      case EnemyType.GHOST:
+        this.drawGhostSprite(g, width, height, entity);
+        break;
+      default:
+        this.drawCrabSprite(g, width, height);
+    }
+  }
+
+  // === CRAB SPRITE (Original enemy) ===
+  private drawCrabSprite(g: PIXI.Graphics, width: number, height: number): void {
+    // Body
+    g.fill(0xFF4500);
+    g.ellipse(width / 2, height / 2, width / 2, height / 3);
+    g.fill();
+    // Eyes
+    g.fill(0xFFFFFF);
+    g.circle(width / 3, height / 3, 4);
+    g.circle(width * 2 / 3, height / 3, 4);
+    g.fill();
+    g.fill(0x000000);
+    g.circle(width / 3, height / 3, 2);
+    g.circle(width * 2 / 3, height / 3, 2);
+    g.fill();
+    // Claws
+    g.fill(0xFF6347);
+    g.circle(0, height / 2, 6);
+    g.circle(width, height / 2, 6);
+    g.fill();
+  }
+
+  // === SEAGULL SPRITE (Flying enemy) ===
+  private drawSeagullSprite(g: PIXI.Graphics, width: number, height: number): void {
+    // Body (white/gray)
+    g.fill(0xF5F5F5);
+    g.ellipse(width / 2, height / 2 + 2, width / 3, height / 4);
+    g.fill();
+    
+    // Head
+    g.fill(0xFFFFFF);
+    g.circle(width * 0.7, height / 3, 6);
+    g.fill();
+    
+    // Beak (orange)
+    g.fill(0xFF8C00);
+    g.moveTo(width * 0.85, height / 3);
+    g.lineTo(width + 2, height / 3 + 2);
+    g.lineTo(width * 0.85, height / 3 + 4);
+    g.closePath();
+    g.fill();
+    
+    // Eye
+    g.fill(0x000000);
+    g.circle(width * 0.72, height / 3 - 1, 2);
+    g.fill();
+    
+    // Wings (animated via scale)
+    g.fill(0xD3D3D3);
+    // Left wing
+    g.moveTo(width / 3, height / 2);
+    g.lineTo(-5, height / 4);
+    g.lineTo(width / 4, height / 2 + 4);
+    g.closePath();
+    g.fill();
+    // Right wing
+    g.moveTo(width * 2 / 3, height / 2);
+    g.lineTo(width + 5, height / 4);
+    g.lineTo(width * 3 / 4, height / 2 + 4);
+    g.closePath();
+    g.fill();
+    
+    // Tail
+    g.fill(0xC0C0C0);
+    g.moveTo(width / 6, height / 2);
+    g.lineTo(-8, height / 2 + 4);
+    g.lineTo(width / 6, height / 2 + 6);
+    g.closePath();
+    g.fill();
+  }
+
+  // === SKELETON SPRITE (Lunging enemy) ===
+  private drawSkeletonSprite(g: PIXI.Graphics, width: number, height: number, entity?: Entity): void {
+    const isCharging = entity?.isCharging || false;
+    const boneColor = 0xE8E8E8;
+    const darkBone = 0xC0C0C0;
+    
+    // Skull
+    g.fill(boneColor);
+    g.ellipse(width / 2, height * 0.2, width / 3, height / 5);
+    g.fill();
+    
+    // Eye sockets (empty, menacing)
+    g.fill(0x1a1a1a);
+    g.ellipse(width / 3, height * 0.18, 4, 5);
+    g.ellipse(width * 2 / 3, height * 0.18, 4, 5);
+    g.fill();
+    
+    // Glowing red eyes when charging
+    if (isCharging) {
+      g.fill(0xFF0000);
+      g.circle(width / 3, height * 0.18, 2);
+      g.circle(width * 2 / 3, height * 0.18, 2);
+      g.fill();
+    }
+    
+    // Nose hole
+    g.fill(0x1a1a1a);
+    g.moveTo(width / 2, height * 0.22);
+    g.lineTo(width / 2 - 2, height * 0.28);
+    g.lineTo(width / 2 + 2, height * 0.28);
+    g.closePath();
+    g.fill();
+    
+    // Teeth/jaw
+    g.fill(boneColor);
+    g.rect(width / 3, height * 0.28, width / 3, 6);
+    g.fill();
+    g.stroke({ color: 0x1a1a1a, width: 1 });
+    for (let i = 0; i < 4; i++) {
+      const x = width / 3 + i * (width / 12);
+      g.moveTo(x, height * 0.28);
+      g.lineTo(x, height * 0.28 + 6);
+      g.stroke();
+    }
+    
+    // Ribcage
+    g.fill(darkBone);
+    g.ellipse(width / 2, height * 0.5, width / 4, height / 5);
+    g.fill();
+    g.stroke({ color: boneColor, width: 2 });
+    for (let i = 0; i < 3; i++) {
+      const y = height * 0.42 + i * 8;
+      g.moveTo(width / 3, y);
+      g.quadraticCurveTo(width / 2, y + 4, width * 2 / 3, y);
+      g.stroke();
+    }
+    
+    // Spine
+    g.stroke({ color: boneColor, width: 3 });
+    g.moveTo(width / 2, height * 0.32);
+    g.lineTo(width / 2, height * 0.7);
+    g.stroke();
+    
+    // Arms (bones)
+    g.stroke({ color: boneColor, width: 3 });
+    // Left arm
+    g.moveTo(width / 3, height * 0.42);
+    g.lineTo(width / 6 - (isCharging ? 5 : 0), height * 0.55);
+    g.stroke();
+    // Right arm (holding cutlass if charging)
+    g.moveTo(width * 2 / 3, height * 0.42);
+    g.lineTo(width * 5 / 6 + (isCharging ? 10 : 0), height * 0.5);
+    g.stroke();
+    
+    // Cutlass (always visible, more prominent when charging)
+    if (isCharging) {
+      // Extended sword
+      g.fill(0xC0C0C0);
+      g.moveTo(width * 5 / 6 + 10, height * 0.45);
+      g.lineTo(width + 15, height * 0.35);
+      g.lineTo(width + 18, height * 0.38);
+      g.lineTo(width * 5 / 6 + 12, height * 0.5);
+      g.closePath();
+      g.fill();
+      // Guard
+      g.fill(0xDAA520);
+      g.circle(width * 5 / 6 + 8, height * 0.48, 3);
+      g.fill();
+    } else {
+      // Lowered sword
+      g.fill(0xA0A0A0);
+      g.rect(width * 5 / 6 - 2, height * 0.52, 3, 15);
+      g.fill();
+    }
+    
+    // Legs (bones)
+    g.stroke({ color: boneColor, width: 3 });
+    g.moveTo(width / 2, height * 0.7);
+    g.lineTo(width / 3, height);
+    g.stroke();
+    g.moveTo(width / 2, height * 0.7);
+    g.lineTo(width * 2 / 3, height);
+    g.stroke();
+    
+    // Pirate bandana on skull
+    g.fill(0x8B0000);
+    g.moveTo(width / 4, height * 0.1);
+    g.quadraticCurveTo(width / 2, height * 0.02, width * 3 / 4, height * 0.1);
+    g.lineTo(width * 3 / 4, height * 0.15);
+    g.quadraticCurveTo(width / 2, height * 0.08, width / 4, height * 0.15);
+    g.closePath();
+    g.fill();
+    // Bandana knot
+    g.fill(0x8B0000);
+    g.circle(width * 0.8, height * 0.12, 4);
+    g.rect(width * 0.8, height * 0.12, 8, 10);
+    g.fill();
+  }
+
+  // === CANNON SPRITE (Stationary shooter) ===
+  private drawCannonSprite(g: PIXI.Graphics, width: number, height: number, entity?: Entity): void {
+    const facingLeft = entity?.facingRight === false;
+    
+    // Cannon base/wheels
+    g.fill(0x4a3728);
+    g.rect(width * 0.15, height * 0.7, width * 0.7, height * 0.3);
+    g.fill();
+    
+    // Wheels
+    g.fill(0x2d1b0e);
+    g.circle(width * 0.25, height * 0.85, height * 0.15);
+    g.circle(width * 0.75, height * 0.85, height * 0.15);
+    g.fill();
+    // Wheel spokes
+    g.stroke({ color: 0x4a3728, width: 2 });
+    g.moveTo(width * 0.25, height * 0.75);
+    g.lineTo(width * 0.25, height * 0.95);
+    g.stroke();
+    g.moveTo(width * 0.75, height * 0.75);
+    g.lineTo(width * 0.75, height * 0.95);
+    g.stroke();
+    
+    // Cannon barrel
+    g.fill(0x3a3a3a);
+    const barrelX = facingLeft ? width * 0.1 : width * 0.35;
+    g.rect(barrelX, height * 0.25, width * 0.55, height * 0.35);
+    g.fill();
+    
+    // Barrel opening (flared)
+    g.fill(0x2a2a2a);
+    if (facingLeft) {
+      g.ellipse(width * 0.08, height * 0.42, 8, height * 0.22);
+    } else {
+      g.ellipse(width * 0.92, height * 0.42, 8, height * 0.22);
+    }
+    g.fill();
+    
+    // Barrel rings (decorative)
+    g.fill(0xDAA520);
+    g.rect(barrelX + 8, height * 0.25, 4, height * 0.35);
+    g.rect(barrelX + width * 0.25, height * 0.25, 4, height * 0.35);
+    g.fill();
+    
+    // Fuse hole
+    g.fill(0x1a1a1a);
+    g.circle(width / 2, height * 0.2, 3);
+    g.fill();
+    
+    // Fuse (lit, sparking)
+    g.stroke({ color: 0xFFD700, width: 2 });
+    g.moveTo(width / 2, height * 0.2);
+    g.lineTo(width / 2 + 5, height * 0.05);
+    g.stroke();
+    // Spark
+    g.fill({ color: 0xFF4500, alpha: 0.8 });
+    g.circle(width / 2 + 5, height * 0.05, 4);
+    g.fill();
+    g.fill({ color: 0xFFFF00, alpha: 0.6 });
+    g.circle(width / 2 + 5, height * 0.05, 2);
+    g.fill();
+  }
+
+  // === JELLYFISH SPRITE (Floating enemy) ===
+  private drawJellyfishSprite(g: PIXI.Graphics, width: number, height: number): void {
+    // Translucent dome/bell
+    g.fill({ color: 0xFF69B4, alpha: 0.7 }); // Hot pink, semi-transparent
+    g.ellipse(width / 2, height * 0.3, width / 2, height * 0.3);
+    g.fill();
+    
+    // Inner glow
+    g.fill({ color: 0xFFB6C1, alpha: 0.5 });
+    g.ellipse(width / 2, height * 0.28, width / 3, height * 0.2);
+    g.fill();
+    
+    // Patterns on bell
+    g.stroke({ color: 0xFF1493, width: 1, alpha: 0.8 });
+    g.moveTo(width * 0.3, height * 0.25);
+    g.quadraticCurveTo(width / 2, height * 0.15, width * 0.7, height * 0.25);
+    g.stroke();
+    g.moveTo(width * 0.35, height * 0.35);
+    g.quadraticCurveTo(width / 2, height * 0.28, width * 0.65, height * 0.35);
+    g.stroke();
+    
+    // Tentacles (wavy)
+    const tentacleColors = [0xFF69B4, 0xFF1493, 0xDB7093, 0xFF69B4];
+    for (let i = 0; i < 4; i++) {
+      g.stroke({ color: tentacleColors[i], width: 2, alpha: 0.8 });
+      const startX = width * 0.2 + i * (width * 0.2);
+      g.moveTo(startX, height * 0.5);
+      g.quadraticCurveTo(startX + (i % 2 === 0 ? 5 : -5), height * 0.65, startX, height * 0.8);
+      g.quadraticCurveTo(startX + (i % 2 === 0 ? -5 : 5), height * 0.95, startX + (i % 2 === 0 ? 3 : -3), height);
+      g.stroke();
+    }
+    
+    // Central frills
+    g.stroke({ color: 0xFFB6C1, width: 3, alpha: 0.6 });
+    g.moveTo(width / 2, height * 0.5);
+    g.lineTo(width / 2, height * 0.75);
+    g.stroke();
+    
+    // Highlight/shine on bell
+    g.fill({ color: 0xFFFFFF, alpha: 0.4 });
+    g.ellipse(width * 0.35, height * 0.2, 4, 6);
+    g.fill();
+  }
+
+  // === GHOST SPRITE (Phasing enemy) ===
+  private drawGhostSprite(g: PIXI.Graphics, width: number, height: number, entity?: Entity): void {
+    const isVisible = entity?.isVisible ?? true;
+    const alpha = isVisible ? 0.85 : 0.25;
+    
+    // Ghost body (flowing shape)
+    g.fill({ color: 0xE8E8FF, alpha });
+    g.moveTo(width / 2, 0);
+    g.quadraticCurveTo(width, 0, width, height * 0.4);
+    g.quadraticCurveTo(width, height * 0.7, width * 0.85, height * 0.85);
+    g.quadraticCurveTo(width * 0.7, height, width * 0.6, height * 0.9);
+    g.quadraticCurveTo(width / 2, height, width * 0.4, height * 0.9);
+    g.quadraticCurveTo(width * 0.3, height, width * 0.15, height * 0.85);
+    g.quadraticCurveTo(0, height * 0.7, 0, height * 0.4);
+    g.quadraticCurveTo(0, 0, width / 2, 0);
+    g.closePath();
+    g.fill();
+    
+    // Inner glow
+    g.fill({ color: 0xFFFFFF, alpha: alpha * 0.5 });
+    g.ellipse(width / 2, height * 0.35, width / 3, height / 4);
+    g.fill();
+    
+    // Eyes (menacing, follow player feel)
+    g.fill({ color: 0x000000, alpha });
+    g.ellipse(width * 0.35, height * 0.3, 5, 7);
+    g.ellipse(width * 0.65, height * 0.3, 5, 7);
+    g.fill();
+    
+    // Glowing pupils
+    g.fill({ color: 0x00FFFF, alpha: isVisible ? 1 : 0.4 });
+    g.circle(width * 0.35, height * 0.32, 2);
+    g.circle(width * 0.65, height * 0.32, 2);
+    g.fill();
+    
+    // Mouth (ghostly moan)
+    g.fill({ color: 0x000000, alpha: alpha * 0.8 });
+    g.ellipse(width / 2, height * 0.52, 6, 4);
+    g.fill();
+    
+    // Pirate hat (ghostly)
+    g.fill({ color: 0x2a2a4a, alpha: alpha * 0.9 });
+    g.moveTo(width * 0.1, height * 0.1);
+    g.lineTo(width * 0.9, height * 0.1);
+    g.lineTo(width * 0.75, height * -0.05);
+    g.lineTo(width / 2, height * -0.15);
+    g.lineTo(width * 0.25, height * -0.05);
+    g.closePath();
+    g.fill();
+    
+    // Hat band
+    g.fill({ color: 0xDAA520, alpha: alpha * 0.7 });
+    g.rect(width * 0.2, height * 0.05, width * 0.6, 4);
+    g.fill();
+    
+    // Spectral aura (when visible)
+    if (isVisible) {
+      g.fill({ color: 0x00FFFF, alpha: 0.15 });
+      g.circle(width / 2, height / 2, width * 0.7);
+      g.fill();
+    }
   }
 
   private createPlayerSprite(color: number): PIXI.Container {

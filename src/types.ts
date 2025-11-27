@@ -36,10 +36,21 @@ export enum EntityType {
   RUM = 'RUM',
   DOUBLOON = 'DOUBLOON',
   CANNON = 'CANNON',
+  CANNONBALL = 'CANNONBALL',
   SPIKE = 'SPIKE',
   GOAL = 'GOAL',
   ENEMY = 'ENEMY',
   SWORD_CHEST = 'SWORD_CHEST'
+}
+
+// Enemy types - progressively introduced through campaign
+export enum EnemyType {
+  CRAB = 'CRAB',           // Level 1+: Basic patrol enemy, ground-based
+  SEAGULL = 'SEAGULL',     // Level 1+: Flying enemy, sine wave pattern
+  SKELETON = 'SKELETON',   // Level 2+: Walks and lunges at player
+  CANNON_TURRET = 'CANNON_TURRET', // Level 3+: Stationary, fires cannonballs
+  JELLYFISH = 'JELLYFISH', // Level 3+: Floats up and down vertically
+  GHOST = 'GHOST',         // Level 4+: Phases in/out, only killed with sword
 }
 
 export interface Entity {
@@ -51,7 +62,31 @@ export interface Entity {
   height: number;
   active: boolean;
   collected?: boolean;
-  patrolDirection?: number; // For enemies
+  // Enemy-specific properties
+  enemyType?: EnemyType;
+  patrolDirection?: number;
+  spawnX?: number;           // Original spawn X for patrol bounds
+  spawnY?: number;           // Original spawn Y for floating enemies
+  patrolWidth?: number;      // Horizontal patrol range
+  patrolHeight?: number;     // Vertical patrol range (for flying/floating)
+  stateTimer?: number;       // General purpose timer for AI states
+  phase?: number;            // Animation phase (for sine waves, ghost fading)
+  isVisible?: boolean;       // For ghost enemies
+  facingRight?: boolean;     // Direction enemy is facing
+  isCharging?: boolean;      // For skeleton lunge attack
+  fireRate?: number;         // For cannon turret
+  lastFired?: number;        // Frame when last fired
+}
+
+// Enemy spawn data for level definition
+export interface EnemySpawnData {
+  x: number;
+  y: number;
+  type?: EnemyType;         // Defaults to CRAB for backwards compatibility
+  patrolWidth?: number;     // Horizontal patrol distance
+  patrolHeight?: number;    // Vertical patrol distance (for flying/floating)
+  fireRate?: number;        // For cannons: frames between shots
+  facingLeft?: boolean;     // Direction to face (for cannons, skeletons)
 }
 
 export interface LevelData {
@@ -63,7 +98,7 @@ export interface LevelData {
   spawnPoint: Vector;
   goalPosition: Vector;
   doubloons: Vector[];
-  enemies?: { x: number; y: number; patrolWidth: number }[];
+  enemies?: EnemySpawnData[];
   spikes?: { x: number; y: number; w: number }[];
   background?: number;
   requiredDoubloons?: number;

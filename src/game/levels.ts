@@ -1,4 +1,4 @@
-import { LevelData } from '../types';
+import { LevelData, EnemyType } from '../types';
 
 export const CAMPAIGN_LEVELS: LevelData[] = [
   {
@@ -95,17 +95,25 @@ export const CAMPAIGN_LEVELS: LevelData[] = [
       { x: 2700, y: 360 },
     ],
     enemies: [
+      // === CRABS (Basic enemy - taught from start) ===
       // First crab - simple patrol on flat ground (teaches enemy mechanic)
-      { x: 850, y: 468, patrolWidth: 200 },
+      { x: 850, y: 468, type: EnemyType.CRAB, patrolWidth: 200 },
       
       // Second crab - on platform (teaches platform enemies)
-      { x: 2050, y: 348, patrolWidth: 80 },
+      { x: 2050, y: 348, type: EnemyType.CRAB, patrolWidth: 80 },
       
       // Third crab - ground patrol in gauntlet
-      { x: 2100, y: 468, patrolWidth: 250 },
+      { x: 2100, y: 468, type: EnemyType.CRAB, patrolWidth: 250 },
+      
+      // === SEAGULLS (Flying enemy - introduced mid-level) ===
+      // First seagull - easy, over safe area to teach flying enemies
+      { x: 650, y: 350, type: EnemyType.SEAGULL, patrolWidth: 150, patrolHeight: 60 },
+      
+      // Second seagull - over spike section (adds challenge)
+      { x: 1650, y: 320, type: EnemyType.SEAGULL, patrolWidth: 200, patrolHeight: 80 },
       
       // Final crab - guarding treasure area
-      { x: 2700, y: 468, patrolWidth: 150 },
+      { x: 2700, y: 468, type: EnemyType.CRAB, patrolWidth: 150 },
     ],
     spikes: [
       // First spike pit - clearly visible, easy to jump over or use platforms
@@ -152,8 +160,19 @@ export const CAMPAIGN_LEVELS: LevelData[] = [
       { x: 1180, y: 260 },
     ],
     enemies: [
-      { x: 450, y: 468, patrolWidth: 150 },
-      { x: 800, y: 468, patrolWidth: 200 },
+      // === CRABS ===
+      { x: 450, y: 468, type: EnemyType.CRAB, patrolWidth: 150 },
+      { x: 800, y: 468, type: EnemyType.CRAB, patrolWidth: 200 },
+      
+      // === SEAGULLS (continued from level 1) ===
+      { x: 500, y: 180, type: EnemyType.SEAGULL, patrolWidth: 120, patrolHeight: 50 },
+      
+      // === SKELETONS (NEW - introduced this level!) ===
+      // First skeleton - guards upper platform, teaches lunge attack
+      { x: 400, y: 268, type: EnemyType.SKELETON, patrolWidth: 100 },
+      
+      // Second skeleton - near goal, more aggressive
+      { x: 1100, y: 468, type: EnemyType.SKELETON, patrolWidth: 180 },
     ],
     spikes: [
       { x: 300, y: 480, w: 100 },
@@ -210,10 +229,29 @@ export const CAMPAIGN_LEVELS: LevelData[] = [
       { x: 1180, y: 100 },
     ],
     enemies: [
-      { x: 150, y: 568, patrolWidth: 300 },
-      { x: 600, y: 568, patrolWidth: 200 },
-      { x: 1100, y: 568, patrolWidth: 400 },
-      { x: 700, y: 268, patrolWidth: 80 },
+      // === CRABS (Bottom deck) ===
+      { x: 150, y: 568, type: EnemyType.CRAB, patrolWidth: 300 },
+      { x: 1100, y: 568, type: EnemyType.CRAB, patrolWidth: 400 },
+      
+      // === SKELETONS (Mid-level ship crew) ===
+      { x: 600, y: 568, type: EnemyType.SKELETON, patrolWidth: 200 },
+      { x: 700, y: 268, type: EnemyType.SKELETON, patrolWidth: 80 },
+      
+      // === SEAGULLS (Flying around the ship) ===
+      { x: 300, y: 250, type: EnemyType.SEAGULL, patrolWidth: 200, patrolHeight: 80 },
+      { x: 1000, y: 180, type: EnemyType.SEAGULL, patrolWidth: 250, patrolHeight: 100 },
+      
+      // === CANNONS (NEW - defending the ship!) ===
+      // First cannon - fires left, teaches dodging cannonballs
+      { x: 450, y: 564, type: EnemyType.CANNON_TURRET, facingLeft: true, fireRate: 120 },
+      
+      // Second cannon - fires right, higher position
+      { x: 950, y: 364, type: EnemyType.CANNON_TURRET, fireRate: 90 },
+      
+      // === JELLYFISH (NEW - floating hazards!) ===
+      // Jellyfish in gaps between platforms
+      { x: 480, y: 520, type: EnemyType.JELLYFISH, patrolHeight: 100 },
+      { x: 880, y: 480, type: EnemyType.JELLYFISH, patrolHeight: 120 },
     ],
     spikes: [
       { x: 400, y: 580, w: 100 },
@@ -287,14 +325,37 @@ export const CAMPAIGN_LEVELS: LevelData[] = [
       { x: 1700, y: 60 },
     ],
     enemies: [
-      { x: 100, y: 668, patrolWidth: 200 },
-      { x: 500, y: 668, patrolWidth: 150 },
-      { x: 800, y: 668, patrolWidth: 180 },
-      { x: 1150, y: 668, patrolWidth: 150 },
-      { x: 1500, y: 668, patrolWidth: 300 },
-      { x: 400, y: 288, patrolWidth: 80 },
-      { x: 900, y: 288, patrolWidth: 80 },
-      { x: 1400, y: 288, patrolWidth: 80 },
+      // === CRABS (Bottom level, underwater cave dwellers) ===
+      { x: 100, y: 668, type: EnemyType.CRAB, patrolWidth: 200 },
+      { x: 800, y: 668, type: EnemyType.CRAB, patrolWidth: 180 },
+      { x: 1500, y: 668, type: EnemyType.CRAB, patrolWidth: 300 },
+      
+      // === SKELETONS (Undead pirates in the lair) ===
+      { x: 500, y: 668, type: EnemyType.SKELETON, patrolWidth: 150 },
+      { x: 1150, y: 668, type: EnemyType.SKELETON, patrolWidth: 150 },
+      { x: 400, y: 288, type: EnemyType.SKELETON, patrolWidth: 80 },
+      
+      // === SEAGULLS (Somehow in the underwater cave...) ===
+      { x: 600, y: 350, type: EnemyType.SEAGULL, patrolWidth: 200, patrolHeight: 100 },
+      
+      // === JELLYFISH (Many in the deep waters!) ===
+      { x: 350, y: 550, type: EnemyType.JELLYFISH, patrolHeight: 150 },
+      { x: 650, y: 600, type: EnemyType.JELLYFISH, patrolHeight: 120 },
+      { x: 1000, y: 550, type: EnemyType.JELLYFISH, patrolHeight: 180 },
+      { x: 1300, y: 580, type: EnemyType.JELLYFISH, patrolHeight: 140 },
+      
+      // === CANNONS (Ancient defenses) ===
+      { x: 700, y: 664, type: EnemyType.CANNON_TURRET, fireRate: 100 },
+      { x: 1200, y: 464, type: EnemyType.CANNON_TURRET, facingLeft: true, fireRate: 80 },
+      
+      // === GHOSTS (NEW - Only appear in Kraken's Lair!) ===
+      // Ghosts phase in and out - can only be killed with sword!
+      { x: 900, y: 288, type: EnemyType.GHOST, patrolWidth: 120 },
+      { x: 1400, y: 288, type: EnemyType.GHOST, patrolWidth: 80 },
+      { x: 1550, y: 380, type: EnemyType.GHOST, patrolWidth: 100 },
+      
+      // === Final ghost guarding the exit ===
+      { x: 1650, y: 68, type: EnemyType.GHOST, patrolWidth: 100 },
     ],
     spikes: [
       { x: 300, y: 680, w: 100 },
