@@ -1,7 +1,7 @@
 import PartySocket from "partysocket";
 import { PhysicsEngine } from "./physics";
 import { GameRenderer } from "./renderer";
-import { GameState, Input, SerializedGameState, PlayerState } from "../types";
+import { GameState, Input, SerializedGameState, PlayerState, CharacterType } from "../types";
 
 const FPS = 60;
 const FRAME_TIME = 1000 / FPS;
@@ -20,6 +20,7 @@ export class Game {
   private localPlayerId: string | null = null;
   private isHost = false;
   private running = false;
+  private characterType: CharacterType;
   
   private onReturnToMenu: (() => void) | null = null;
 
@@ -30,10 +31,11 @@ export class Game {
     action: false
   };
 
-  constructor(renderer: GameRenderer, roomCode: string, onReturnToMenu?: () => void) {
+  constructor(renderer: GameRenderer, roomCode: string, onReturnToMenu?: () => void, characterType: CharacterType = CharacterType.PIRATE) {
     this.physics = new PhysicsEngine();
     this.renderer = renderer;
     this.onReturnToMenu = onReturnToMenu || null;
+    this.characterType = characterType;
     
     this.inputs = new Map();
     
@@ -145,6 +147,7 @@ export class Game {
       // Spawn at different positions based on player count
       const playerIndex = this.state.players.size;
       const spawnX = 100 + playerIndex * 100;
+      const charType = isLocal ? this.characterType : CharacterType.PIRATE;
       
       this.state.players.set(id, {
         id,
@@ -153,8 +156,8 @@ export class Game {
         isGrounded: false,
         facingRight: true,
         width: 32,
-        height: 32,
-        color: isLocal ? 0xe74c3c : 0x3498db,
+        height: charType === CharacterType.OCTOPUS ? 40 : 32,
+        color: this.getCharacterColor(charType, isLocal),
         sizeModifier: 1,
         health: 3,
         doubloons: 0,
@@ -162,8 +165,23 @@ export class Game {
         isAttacking: false,
         attackFrame: 0,
         attackCooldown: 0,
-        hasSword: true  // Multiplayer players start with sword
+        hasSword: true,  // Multiplayer players start with sword
+        characterType: charType
       });
+    }
+  }
+
+  private getCharacterColor(charType: CharacterType, isLocal: boolean): number {
+    if (!isLocal) {
+      return 0x3498db; // Blue for other players
+    }
+    switch (charType) {
+      case CharacterType.GIRL_PIRATE:
+        return 0x9b59b6; // Purple
+      case CharacterType.OCTOPUS:
+        return 0x8e44ad; // Deep purple
+      default:
+        return 0xe74c3c; // Red (classic pirate)
     }
   }
 

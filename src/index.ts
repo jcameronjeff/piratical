@@ -2,7 +2,7 @@ import { Game } from './game/game';
 import { SinglePlayerGame } from './game/singleplayer';
 import { GameRenderer } from './game/renderer';
 import { MainMenu } from './menu';
-import { GameMode } from './types';
+import { GameMode, CharacterType } from './types';
 
 import './style.css';
 
@@ -37,15 +37,16 @@ function showMenu() {
   menu.show();
 }
 
-async function handleModeSelect(mode: GameMode, levelId?: number, roomCode?: string) {
+async function handleModeSelect(mode: GameMode, levelId?: number, roomCode?: string, characterType?: CharacterType) {
   if (menu) {
     menu.hide();
   }
 
   renderer = new GameRenderer();
+  const selectedCharacter = characterType || CharacterType.PIRATE;
 
   if (mode === 'campaign') {
-    currentGame = new SinglePlayerGame(renderer, showMenu);
+    currentGame = new SinglePlayerGame(renderer, showMenu, selectedCharacter);
     await currentGame.start();
     if (levelId) {
       await currentGame.loadLevel(levelId);
@@ -65,7 +66,7 @@ async function handleModeSelect(mode: GameMode, levelId?: number, roomCode?: str
     `;
     document.body.appendChild(overlay);
 
-    currentGame = new Game(renderer, code, showMenu);
+    currentGame = new Game(renderer, code, showMenu, selectedCharacter);
     await currentGame.start();
   }
 }

@@ -1,5 +1,5 @@
 import SAT from 'sat';
-import { GameState, PlayerState, Input, EntityType, LevelData } from '../types';
+import { GameState, PlayerState, Input, EntityType, EnemyType, LevelData } from '../types';
 
 // Constants for integer-based physics (x100)
 const SCALE = 100;
@@ -231,6 +231,12 @@ export class PhysicsEngine {
 
         for (const entity of state.entities) {
           if (!entity.active || entity.type !== EntityType.ENEMY) continue;
+          
+          // Cannon turrets cannot be killed with sword
+          if (entity.enemyType === EnemyType.CANNON_TURRET) continue;
+          
+          // Ghosts can only be killed when visible
+          if (entity.enemyType === EnemyType.GHOST && !entity.isVisible) continue;
 
           const entityBox = new SAT.Box(
             new SAT.Vector(entity.position.x * SCALE, entity.position.y * SCALE),
@@ -270,6 +276,45 @@ export class PhysicsEngine {
               break;
 
             case EntityType.ENEMY:
+              // Handle different enemy types
+              const enemyType = entity.enemyType || EnemyType.CRAB;
+              
+              // Ghost-specific logic - can only be killed with sword when visible
+              if (enemyType === EnemyType.GHOST) {
+                if (!entity.isVisible) {
+                  // Ghost is phased out - player passes through harmlessly
+                  break;
+                }
+                // When visible, can only be killed with sword (not stomp)
+                if (!player.isAttacking) {
+                  state.levelFailed = true;
+                }
+                // Sword kills handled above in the sword attack section
+                break;
+              }
+              
+              // Cannon turrets can't be killed, just avoided
+              if (enemyType === EnemyType.CANNON_TURRET) {
+                // Cannons are indestructible - touching hurts player
+                state.levelFailed = true;
+                break;
+              }
+              
+              // Jellyfish - can be killed but hurt on any contact
+              if (enemyType === EnemyType.JELLYFISH) {
+                if (player.isAttacking || (player.velocity.y > 0 && player.position.y < entity.position.y * SCALE)) {
+                  // Can stomp or sword jellyfish
+                  entity.active = false;
+                  if (player.velocity.y > 0) {
+                    player.velocity.y = JUMP_VELOCITY * 0.6;
+                  }
+                } else {
+                  state.levelFailed = true;
+                }
+                break;
+              }
+              
+              // Standard enemies (CRAB, SEAGULL, SKELETON)
               // Sword attack already handled above with extended range
               // Check for stomp attack
               if (player.velocity.y > 0 && player.position.y < entity.position.y * SCALE) {
@@ -281,6 +326,11 @@ export class PhysicsEngine {
                 state.levelFailed = true;
               }
               // If attacking but didn't hit with sword, player is protected but doesn't kill enemy
+              break;
+              
+            case EntityType.CANNONBALL:
+              // Cannonballs always hurt the player
+              state.levelFailed = true;
               break;
 
             case EntityType.GOAL:

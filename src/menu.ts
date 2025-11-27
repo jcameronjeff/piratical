@@ -1,12 +1,23 @@
-import { GameMode, CampaignProgress } from './types';
+import { GameMode, CampaignProgress, CharacterType, CharacterInfo } from './types';
 import { CAMPAIGN_LEVELS } from './game/levels';
+
+const CHARACTERS: CharacterInfo[] = [
+  { type: CharacterType.PIRATE, name: 'Captain Jack', description: 'A classic swashbuckler', unlocked: true },
+  { type: CharacterType.GIRL_PIRATE, name: 'Scarlet Rose', description: 'The fiercest corsair of the seven seas', unlocked: true },
+  { type: CharacterType.OCTOPUS, name: 'Inky Pete', description: 'Eight arms of pirate fury', unlocked: true },
+  { type: CharacterType.LOCKED, name: '???', description: 'Complete 5 levels to unlock', unlocked: false },
+  { type: CharacterType.LOCKED, name: '???', description: 'Find all doubloons to unlock', unlocked: false },
+  { type: CharacterType.LOCKED, name: '???', description: 'Defeat the Kraken to unlock', unlocked: false },
+];
 
 export class MainMenu {
   private container: HTMLDivElement | null = null;
-  private onModeSelect: (mode: GameMode, levelId?: number, roomCode?: string) => void;
+  private onModeSelect: (mode: GameMode, levelId?: number, roomCode?: string, characterType?: CharacterType) => void;
   private progress: CampaignProgress;
+  private pendingMode: GameMode | null = null;
+  private pendingRoomCode: string | null = null;
 
-  constructor(onModeSelect: (mode: GameMode, levelId?: number, roomCode?: string) => void) {
+  constructor(onModeSelect: (mode: GameMode, levelId?: number, roomCode?: string, characterType?: CharacterType) => void) {
     this.onModeSelect = onModeSelect;
     this.progress = this.loadProgress();
   }
@@ -414,38 +425,398 @@ export class MainMenu {
         0% { transform: translateX(0); }
         100% { transform: translateX(-50%); }
       }
+
+      /* Character Selection Styles */
+      .character-select-content {
+        text-align: center;
+        z-index: 10;
+        padding: 30px;
+        max-width: 900px;
+      }
+
+      .character-title {
+        font-family: 'Cinzel', serif;
+        font-size: 2.8rem;
+        font-weight: 900;
+        color: #ffd700;
+        text-shadow: 
+          0 0 10px rgba(255, 215, 0, 0.5),
+          0 4px 0 #b8860b,
+          0 6px 0 #8b6914,
+          0 8px 20px rgba(0, 0, 0, 0.5);
+        margin: 0;
+        letter-spacing: 4px;
+        animation: titleFloat 3s ease-in-out infinite;
+      }
+
+      .anchor {
+        display: inline-block;
+        animation: anchorSwing 3s ease-in-out infinite;
+      }
+
+      .anchor:last-child {
+        animation-delay: 0.5s;
+      }
+
+      @keyframes anchorSwing {
+        0%, 100% { transform: rotate(-10deg); }
+        50% { transform: rotate(10deg); }
+      }
+
+      .character-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin: 30px 0;
+      }
+
+      .character-card {
+        position: relative;
+        background: linear-gradient(145deg, #2a4a5a 0%, #1a3040 100%);
+        border: 3px solid #4a7a8a;
+        border-radius: 16px;
+        padding: 20px 15px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        overflow: hidden;
+      }
+
+      .character-card.unlocked:hover {
+        transform: translateY(-8px) scale(1.02);
+        border-color: #ffd700;
+        box-shadow: 
+          0 15px 40px rgba(0, 0, 0, 0.4),
+          0 0 30px rgba(255, 215, 0, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      }
+
+      .character-card.unlocked:active {
+        transform: translateY(-2px) scale(0.98);
+      }
+
+      .character-card.locked {
+        cursor: not-allowed;
+        filter: grayscale(0.8);
+        opacity: 0.7;
+      }
+
+      .character-avatar {
+        width: 100%;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+        position: relative;
+      }
+
+      .character-svg {
+        width: 90px;
+        height: 90px;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+      }
+
+      .octopus-svg {
+        height: 100px;
+      }
+
+      .character-card.unlocked:hover .character-svg {
+        animation: characterBounce 0.5s ease-in-out;
+      }
+
+      @keyframes characterBounce {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+
+      .locked-avatar {
+        background: linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%);
+        border-radius: 50%;
+        width: 100px;
+        height: 100px;
+        margin: 0 auto;
+      }
+
+      .locked-silhouette {
+        font-size: 48px;
+        color: #333;
+        text-shadow: 0 0 10px rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100px;
+        height: 100px;
+        background: radial-gradient(circle, #2a2a2a 0%, #0a0a0a 100%);
+        border-radius: 50%;
+        border: 3px dashed #444;
+      }
+
+      .lock-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 48px;
+        text-shadow: 0 4px 10px rgba(0,0,0,0.8);
+        z-index: 10;
+        animation: lockPulse 2s ease-in-out infinite;
+      }
+
+      @keyframes lockPulse {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); }
+        50% { transform: translate(-50%, -50%) scale(1.1); }
+      }
+
+      .character-info {
+        text-align: center;
+      }
+
+      .character-name {
+        font-family: 'Cinzel', serif;
+        font-size: 1.2rem;
+        color: #ffd700;
+        margin: 0 0 6px 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      }
+
+      .character-desc {
+        font-family: 'Satisfy', cursive;
+        font-size: 0.95rem;
+        color: #87ceeb;
+        margin: 0;
+        line-height: 1.3;
+      }
+
+      .back-btn {
+        margin-top: 10px;
+        justify-content: center;
+        background: linear-gradient(135deg, #4a4a4a 0%, #2a2a2a 100%) !important;
+        border-color: #6a6a6a !important;
+      }
+
+      .back-btn:hover {
+        background: linear-gradient(135deg, #5a5a5a 0%, #3a3a3a 100%) !important;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 800px) {
+        .character-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 15px;
+        }
+        
+        .character-title {
+          font-size: 2rem;
+        }
+        
+        .character-svg {
+          width: 70px;
+          height: 70px;
+        }
+      }
     `;
     document.head.appendChild(style);
   }
 
   private attachEventListeners(roomFromUrl: string | null) {
-    // Campaign button - start directly at level 1
+    // Campaign button - show character selection
     const campaignBtn = document.getElementById('campaign-btn');
     if (campaignBtn) {
       campaignBtn.onclick = () => {
         console.log('Campaign clicked!');
-        this.onModeSelect('campaign', 1);
+        this.pendingMode = 'campaign';
+        this.pendingRoomCode = null;
+        this.showCharacterSelection();
       };
     }
 
-    // Multiplayer button
+    // Multiplayer button - show character selection
     const multiplayerBtn = document.getElementById('multiplayer-btn');
     if (multiplayerBtn) {
       multiplayerBtn.onclick = () => {
         const roomCode = `SHIP-${Math.random().toString().slice(2, 6)}`;
         window.history.replaceState(null, '', `?room=${roomCode}`);
-        this.onModeSelect('multiplayer', undefined, roomCode);
+        this.pendingMode = 'multiplayer';
+        this.pendingRoomCode = roomCode;
+        this.showCharacterSelection();
       };
     }
 
-    // Join room from URL
+    // Join room from URL - show character selection
     if (roomFromUrl) {
       const joinBtn = document.getElementById('join-room-btn');
       if (joinBtn) {
         joinBtn.onclick = () => {
-          this.onModeSelect('multiplayer', undefined, roomFromUrl);
+          this.pendingMode = 'multiplayer';
+          this.pendingRoomCode = roomFromUrl;
+          this.showCharacterSelection();
         };
       }
     }
+  }
+
+  private showCharacterSelection() {
+    // Remove any existing menu
+    this.hide();
+    
+    this.container = document.createElement('div');
+    this.container.id = 'main-menu';
+    this.container.innerHTML = `
+      <div class="menu-backdrop">
+        <div class="character-select-content">
+          <div class="menu-header">
+            <h1 class="character-title">
+              <span class="anchor">⚓</span>
+              Choose Yer Pirate
+              <span class="anchor">⚓</span>
+            </h1>
+            <p class="menu-subtitle">Select a character to begin</p>
+          </div>
+
+          <div class="character-grid">
+            ${CHARACTERS.map((char, index) => `
+              <div class="character-card ${char.unlocked ? 'unlocked' : 'locked'}" data-character="${char.type}" data-index="${index}">
+                <div class="character-avatar ${char.unlocked ? '' : 'locked-avatar'}">
+                  ${this.getCharacterPreview(char)}
+                </div>
+                <div class="character-info">
+                  <h3 class="character-name">${char.name}</h3>
+                  <p class="character-desc">${char.description}</p>
+                </div>
+                ${!char.unlocked ? '<div class="lock-overlay">🔒</div>' : ''}
+              </div>
+            `).join('')}
+          </div>
+
+          <button class="menu-btn back-btn" id="back-btn">
+            <span class="btn-icon">↩️</span>
+            <span class="btn-text">
+              <span class="btn-title">Back to Menu</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="menu-waves">
+          <div class="wave wave1"></div>
+          <div class="wave wave2"></div>
+          <div class="wave wave3"></div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(this.container);
+    this.attachCharacterSelectListeners();
+  }
+
+  private getCharacterPreview(char: CharacterInfo): string {
+    if (!char.unlocked) {
+      return `<div class="locked-silhouette">?</div>`;
+    }
+    
+    switch(char.type) {
+      case CharacterType.PIRATE:
+        return `
+          <svg viewBox="0 0 64 64" class="character-svg">
+            <!-- Pirate Captain -->
+            <rect x="12" y="28" width="40" height="28" fill="#e74c3c"/>
+            <rect x="20" y="32" width="6" height="20" fill="#fff"/>
+            <rect x="38" y="32" width="6" height="20" fill="#fff"/>
+            <rect x="12" y="52" width="18" height="8" fill="#2c1810"/>
+            <rect x="34" y="52" width="18" height="8" fill="#2c1810"/>
+            <circle cx="32" cy="16" r="14" fill="#DEB887"/>
+            <rect x="12" y="8" width="40" height="4" fill="#1a1a1a"/>
+            <circle cx="22" cy="14" r="5" fill="#1a1a1a"/>
+            <circle cx="42" cy="14" r="4" fill="#fff"/>
+            <circle cx="43" cy="14" r="2" fill="#000"/>
+            <rect x="20" y="24" width="24" height="6" fill="#3d2314"/>
+            <path d="M4,4 L60,4 L56,-8 L32,-20 L8,-8 Z" fill="#1a1a1a"/>
+            <rect x="16" y="-4" width="32" height="6" fill="#DAA520"/>
+            <circle cx="32" cy="-1" r="5" fill="#fff"/>
+          </svg>
+        `;
+      case CharacterType.GIRL_PIRATE:
+        return `
+          <svg viewBox="0 0 64 64" class="character-svg">
+            <!-- Girl Pirate -->
+            <rect x="14" y="28" width="36" height="26" fill="#9b59b6"/>
+            <rect x="20" y="32" width="4" height="18" fill="#fff"/>
+            <rect x="40" y="32" width="4" height="18" fill="#fff"/>
+            <rect x="14" y="50" width="14" height="10" fill="#2c1810"/>
+            <rect x="36" y="50" width="14" height="10" fill="#2c1810"/>
+            <circle cx="32" cy="16" r="14" fill="#DEB887"/>
+            <ellipse cx="32" cy="4" rx="16" ry="8" fill="#c0392b"/>
+            <path d="M16,8 Q8,-6 20,-4 Q32,-2 32,6" fill="#c0392b"/>
+            <path d="M48,8 Q56,-6 44,-4 Q32,-2 32,6" fill="#c0392b"/>
+            <circle cx="24" cy="14" r="4" fill="#fff"/>
+            <circle cx="25" cy="14" r="2" fill="#2ecc71"/>
+            <circle cx="40" cy="14" r="4" fill="#fff"/>
+            <circle cx="41" cy="14" r="2" fill="#2ecc71"/>
+            <ellipse cx="32" cy="18" rx="2" ry="1" fill="#ffb6c1"/>
+            <path d="M26,22 Q32,26 38,22" stroke="#c0392b" stroke-width="2" fill="none"/>
+            <circle cx="46" cy="16" r="5" fill="#DAA520"/>
+            <circle cx="18" cy="16" r="5" fill="#DAA520"/>
+          </svg>
+        `;
+      case CharacterType.OCTOPUS:
+        return `
+          <svg viewBox="0 0 64 72" class="character-svg octopus-svg">
+            <!-- Pirate Octopus -->
+            <ellipse cx="32" cy="20" rx="24" ry="18" fill="#8e44ad"/>
+            <!-- Tentacles -->
+            <path d="M8,32 Q4,48 12,56 Q16,62 20,56" stroke="#8e44ad" stroke-width="8" fill="none" stroke-linecap="round"/>
+            <path d="M20,36 Q16,52 22,60 Q26,66 30,58" stroke="#8e44ad" stroke-width="8" fill="none" stroke-linecap="round"/>
+            <path d="M32,38 Q32,54 32,62 Q32,68 36,62" stroke="#8e44ad" stroke-width="8" fill="none" stroke-linecap="round"/>
+            <path d="M44,36 Q48,52 42,60 Q38,66 34,58" stroke="#8e44ad" stroke-width="8" fill="none" stroke-linecap="round"/>
+            <path d="M56,32 Q60,48 52,56 Q48,62 44,56" stroke="#8e44ad" stroke-width="8" fill="none" stroke-linecap="round"/>
+            <!-- Suction cups -->
+            <circle cx="12" cy="48" r="2" fill="#9b59b6"/>
+            <circle cx="20" cy="52" r="2" fill="#9b59b6"/>
+            <circle cx="32" cy="54" r="2" fill="#9b59b6"/>
+            <circle cx="44" cy="52" r="2" fill="#9b59b6"/>
+            <circle cx="52" cy="48" r="2" fill="#9b59b6"/>
+            <!-- Eyes -->
+            <circle cx="22" cy="18" r="7" fill="#fff"/>
+            <circle cx="23" cy="18" r="4" fill="#000"/>
+            <circle cx="42" cy="18" r="7" fill="#fff"/>
+            <circle cx="43" cy="18" r="4" fill="#000"/>
+            <circle cx="42" cy="16" r="6" fill="#1a1a1a"/>
+            <!-- Pirate Hat -->
+            <path d="M8,8 L56,8 L52,0 L32,-12 L12,0 Z" fill="#1a1a1a"/>
+            <rect x="16" y="2" width="32" height="5" fill="#DAA520"/>
+            <circle cx="32" cy="4" r="4" fill="#fff"/>
+          </svg>
+        `;
+      default:
+        return `<div class="locked-silhouette">?</div>`;
+    }
+  }
+
+  private attachCharacterSelectListeners() {
+    // Back button
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) {
+      backBtn.onclick = () => {
+        this.pendingMode = null;
+        this.pendingRoomCode = null;
+        this.render();
+      };
+    }
+
+    // Character cards
+    const cards = document.querySelectorAll('.character-card.unlocked');
+    cards.forEach((card) => {
+      card.addEventListener('click', () => {
+        const characterType = card.getAttribute('data-character') as CharacterType;
+        if (characterType && this.pendingMode) {
+          if (this.pendingMode === 'campaign') {
+            this.onModeSelect('campaign', 1, undefined, characterType);
+          } else if (this.pendingMode === 'multiplayer') {
+            this.onModeSelect('multiplayer', undefined, this.pendingRoomCode || undefined, characterType);
+          }
+          this.pendingMode = null;
+          this.pendingRoomCode = null;
+        }
+      });
+    });
   }
 }

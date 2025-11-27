@@ -1,6 +1,6 @@
 import { PhysicsEngine } from "./physics";
 import { GameRenderer } from "./renderer";
-import { GameState, Input, EntityType, LevelData, CampaignProgress } from "../types";
+import { GameState, Input, EntityType, EnemyType, LevelData, CampaignProgress, CharacterType, Entity } from "../types";
 import { CAMPAIGN_LEVELS, getLevelById, getNextLevel } from "./levels";
 
 const FPS = 60;
@@ -19,6 +19,7 @@ export class SinglePlayerGame {
   private running = false;
   private paused = false;
   private levelStartTime = 0;
+  private characterType: CharacterType;
 
   // Input state
   private keys = {
@@ -30,10 +31,11 @@ export class SinglePlayerGame {
   
   private onReturnToMenu: (() => void) | null = null;
 
-  constructor(renderer: GameRenderer, onReturnToMenu?: () => void) {
+  constructor(renderer: GameRenderer, onReturnToMenu?: () => void, characterType: CharacterType = CharacterType.PIRATE) {
     this.physics = new PhysicsEngine();
     this.renderer = renderer;
     this.onReturnToMenu = onReturnToMenu || null;
+    this.characterType = characterType;
     
     // Load progress from localStorage
     this.progress = this.loadProgress();
@@ -154,8 +156,8 @@ export class SinglePlayerGame {
       isGrounded: false,
       facingRight: true,
       width: 32,
-      height: 32,
-      color: 0xe74c3c, // Nice red
+      height: this.characterType === CharacterType.OCTOPUS ? 40 : 32,
+      color: this.getCharacterColor(),
       sizeModifier: 1,
       health: 3,
       doubloons: 0,
@@ -163,7 +165,8 @@ export class SinglePlayerGame {
       isAttacking: false,
       attackFrame: 0,
       attackCooldown: 0,
-      hasSword: false  // Player starts without sword, must collect from chest
+      hasSword: false,  // Player starts without sword, must collect from chest
+      characterType: this.characterType
     });
 
     // Create entities from level data
@@ -195,16 +198,60 @@ export class SinglePlayerGame {
     // Enemies
     if (level.enemies) {
       for (const enemy of level.enemies) {
-        this.state.entities.push({
+        const enemyType = enemy.type || EnemyType.CRAB;
+        
+        // Determine size based on enemy type
+        let width = 32;
+        let height = 24;
+        let velocityX = 1;
+        
+        switch (enemyType) {
+          case EnemyType.CRAB:
+            width = 32; height = 24; velocityX = 1;
+            break;
+          case EnemyType.SEAGULL:
+            width = 36; height = 20; velocityX = 1.5; // Faster, flying
+            break;
+          case EnemyType.SKELETON:
+            width = 28; height = 40; velocityX = 0.8; // Taller, slower base speed
+            break;
+          case EnemyType.CANNON_TURRET:
+            width = 48; height = 36; velocityX = 0; // Stationary
+            break;
+          case EnemyType.JELLYFISH:
+            width = 28; height = 36; velocityX = 0; // Only moves vertically
+            break;
+          case EnemyType.GHOST:
+            width = 32; height = 36; velocityX = 0.6; // Slow, floaty
+            break;
+        }
+        
+        const newEnemy: Entity = {
           id: `enemy_${entityId++}`,
           type: EntityType.ENEMY,
+          enemyType: enemyType,
           position: { x: enemy.x, y: enemy.y },
-          velocity: { x: 1, y: 0 },
-          width: 32,
-          height: 24,
+          velocity: { x: velocityX, y: 0 },
+          width,
+          height,
           active: true,
-          patrolDirection: 1
-        });
+          // Store spawn position for patrol bounds
+          spawnX: enemy.x,
+          spawnY: enemy.y,
+          patrolWidth: enemy.patrolWidth || 100,
+          patrolHeight: enemy.patrolHeight || 0,
+          patrolDirection: 1,
+          facingRight: !enemy.facingLeft,
+          // Type-specific properties
+          stateTimer: 0,
+          phase: 0,
+          isVisible: true, // For ghosts
+          isCharging: false, // For skeletons
+          fireRate: enemy.fireRate || 120,
+          lastFired: 0
+        };
+        
+        this.state.entities.push(newEnemy);
       }
     }
 
@@ -391,31 +438,234 @@ export class SinglePlayerGame {
   }
 
   private updateEnemies() {
+    const player = this.state.players.get(this.playerId);
+    const currentFrame = this.state.frame;
+    
     for (const entity of this.state.entities) {
-      if (entity.type === EntityType.ENEMY && entity.active && entity.velocity) {
-        // Move enemy
-        entity.position.x += entity.velocity.x;
-        
-        // Simple patrol - reverse at level edges or after traveling
-        const level = this.currentLevel;
-        if (level) {
-          // Find spawn data to get patrol width
-          const velocityX = entity.velocity?.x || 0;
-          const enemyData = level.enemies?.find(e => 
-            Math.abs(e.x - entity.position.x) < 200 || 
-            Math.abs(e.x - (entity.position.x - velocityX * 200)) < 200
-          );
-          
-          if (enemyData) {
-            const minX = enemyData.x - enemyData.patrolWidth / 2;
-            const maxX = enemyData.x + enemyData.patrolWidth / 2;
-            
-            if (entity.velocity && (entity.position.x <= minX || entity.position.x >= maxX)) {
-              entity.velocity.x *= -1;
-            }
-          }
+      if (entity.type !== EntityType.ENEMY || !entity.active) continue;
+      
+      const enemyType = entity.enemyType || EnemyType.CRAB;
+      
+      switch (enemyType) {
+        case EnemyType.CRAB:
+          this.updateCrab(entity);
+          break;
+        case EnemyType.SEAGULL:
+          this.updateSeagull(entity, currentFrame);
+          break;
+        case EnemyType.SKELETON:
+          this.updateSkeleton(entity, player);
+          break;
+        case EnemyType.CANNON_TURRET:
+          this.updateCannon(entity, currentFrame);
+          break;
+        case EnemyType.JELLYFISH:
+          this.updateJellyfish(entity, currentFrame);
+          break;
+        case EnemyType.GHOST:
+          this.updateGhost(entity, currentFrame, player);
+          break;
+      }
+    }
+    
+    // Update cannonballs
+    this.updateCannonballs();
+  }
+  
+  // === CRAB: Simple horizontal patrol ===
+  private updateCrab(entity: Entity) {
+    if (!entity.velocity) return;
+    
+    entity.position.x += entity.velocity.x;
+    
+    const spawnX = entity.spawnX || entity.position.x;
+    const patrolWidth = entity.patrolWidth || 100;
+    const minX = spawnX - patrolWidth / 2;
+    const maxX = spawnX + patrolWidth / 2;
+    
+    if (entity.position.x <= minX || entity.position.x >= maxX) {
+      entity.velocity.x *= -1;
+      entity.facingRight = entity.velocity.x > 0;
+    }
+  }
+  
+  // === SEAGULL: Flying sine wave pattern ===
+  private updateSeagull(entity: Entity, _frame: number) {
+    if (!entity.velocity) return;
+    
+    // Horizontal movement
+    entity.position.x += entity.velocity.x;
+    
+    const spawnX = entity.spawnX || entity.position.x;
+    const spawnY = entity.spawnY || entity.position.y;
+    const patrolWidth = entity.patrolWidth || 150;
+    const patrolHeight = entity.patrolHeight || 60;
+    
+    // Patrol bounds
+    const minX = spawnX - patrolWidth / 2;
+    const maxX = spawnX + patrolWidth / 2;
+    
+    if (entity.position.x <= minX || entity.position.x >= maxX) {
+      entity.velocity.x *= -1;
+      entity.facingRight = entity.velocity.x > 0;
+    }
+    
+    // Sine wave vertical movement
+    entity.phase = (entity.phase || 0) + 0.05;
+    entity.position.y = spawnY + Math.sin(entity.phase) * patrolHeight / 2;
+  }
+  
+  // === SKELETON: Walks and lunges at player ===
+  private updateSkeleton(entity: Entity, player: { position: { x: number; y: number } } | undefined) {
+    if (!entity.velocity) return;
+    
+    const spawnX = entity.spawnX || entity.position.x;
+    const patrolWidth = entity.patrolWidth || 100;
+    const minX = spawnX - patrolWidth / 2;
+    const maxX = spawnX + patrolWidth / 2;
+    
+    // State timer for charging
+    entity.stateTimer = (entity.stateTimer || 0) + 1;
+    
+    // Check if player is in range for a lunge
+    const lungeRange = 150; // How close player needs to be to trigger lunge
+    const playerInRange = player && 
+      Math.abs(player.position.x / 100 - entity.position.x) < lungeRange &&
+      Math.abs(player.position.y / 100 - entity.position.y) < 60;
+    
+    if (entity.isCharging) {
+      // During charge: move faster toward player direction
+      const chargeSpeed = 3;
+      entity.position.x += entity.facingRight ? chargeSpeed : -chargeSpeed;
+      
+      // Charge lasts 30 frames
+      if (entity.stateTimer > 30) {
+        entity.isCharging = false;
+        entity.stateTimer = 0;
+        // Reset velocity after charge
+        entity.velocity.x = entity.facingRight ? 0.8 : -0.8;
+      }
+    } else {
+      // Normal patrol
+      entity.position.x += entity.velocity.x;
+      
+      // Patrol bounds
+      if (entity.position.x <= minX || entity.position.x >= maxX) {
+        entity.velocity.x *= -1;
+        entity.facingRight = entity.velocity.x > 0;
+      }
+      
+      // Start a charge if player in range and cooldown passed
+      if (playerInRange && entity.stateTimer > 60) {
+        entity.isCharging = true;
+        entity.stateTimer = 0;
+        // Face the player
+        if (player) {
+          entity.facingRight = player.position.x / 100 > entity.position.x;
         }
       }
+    }
+  }
+  
+  // === CANNON TURRET: Stationary, fires cannonballs ===
+  private updateCannon(entity: Entity, frame: number) {
+    const fireRate = entity.fireRate || 120;
+    const lastFired = entity.lastFired || 0;
+    
+    if (frame - lastFired >= fireRate) {
+      entity.lastFired = frame;
+      this.fireCannonball(entity);
+    }
+  }
+  
+  private fireCannonball(cannon: Entity) {
+    const ballSpeed = cannon.facingRight ? 3 : -3;
+    const spawnX = cannon.facingRight 
+      ? cannon.position.x + cannon.width 
+      : cannon.position.x - 12;
+    const spawnY = cannon.position.y + cannon.height * 0.4;
+    
+    this.state.entities.push({
+      id: `cannonball_${Date.now()}_${Math.random()}`,
+      type: EntityType.CANNONBALL,
+      position: { x: spawnX, y: spawnY },
+      velocity: { x: ballSpeed, y: 0 },
+      width: 12,
+      height: 12,
+      active: true
+    });
+  }
+  
+  private updateCannonballs() {
+    const level = this.currentLevel;
+    
+    for (const entity of this.state.entities) {
+      if (entity.type !== EntityType.CANNONBALL || !entity.active) continue;
+      
+      // Move cannonball
+      if (entity.velocity) {
+        entity.position.x += entity.velocity.x;
+        // Add slight gravity for arc
+        entity.velocity.y = (entity.velocity.y || 0) + 0.1;
+        entity.position.y += entity.velocity.y;
+      }
+      
+      // Remove if off screen
+      if (level) {
+        if (entity.position.x < -50 || entity.position.x > level.width + 50 ||
+            entity.position.y > level.height + 50) {
+          entity.active = false;
+        }
+      }
+    }
+  }
+  
+  // === JELLYFISH: Floats up and down ===
+  private updateJellyfish(entity: Entity, _frame: number) {
+    const spawnY = entity.spawnY || entity.position.y;
+    const patrolHeight = entity.patrolHeight || 100;
+    
+    // Smooth sine wave vertical movement
+    entity.phase = (entity.phase || 0) + 0.03;
+    entity.position.y = spawnY + Math.sin(entity.phase) * patrolHeight / 2;
+    
+    // Slight horizontal drift
+    entity.position.x += Math.sin(entity.phase * 0.5) * 0.3;
+  }
+  
+  // === GHOST: Phases in/out, patrols slowly ===
+  private updateGhost(entity: Entity, _frame: number, _player: { position: { x: number; y: number } } | undefined) {
+    if (!entity.velocity) return;
+    
+    const spawnX = entity.spawnX || entity.position.x;
+    const patrolWidth = entity.patrolWidth || 100;
+    
+    // Phase timer (controls visibility)
+    entity.stateTimer = (entity.stateTimer || 0) + 1;
+    
+    // Visibility cycle: visible for 180 frames, invisible for 90 frames
+    const cycleLength = 270;
+    const visibleDuration = 180;
+    const cyclePosition = entity.stateTimer % cycleLength;
+    entity.isVisible = cyclePosition < visibleDuration;
+    
+    // Move only when visible
+    if (entity.isVisible) {
+      entity.position.x += entity.velocity.x;
+      
+      // Patrol bounds
+      const minX = spawnX - patrolWidth / 2;
+      const maxX = spawnX + patrolWidth / 2;
+      
+      if (entity.position.x <= minX || entity.position.x >= maxX) {
+        entity.velocity.x *= -1;
+        entity.facingRight = entity.velocity.x > 0;
+      }
+      
+      // Slight floating effect
+      entity.phase = (entity.phase || 0) + 0.05;
+      const spawnY = entity.spawnY || entity.position.y;
+      entity.position.y = spawnY + Math.sin(entity.phase) * 5;
     }
   }
 
@@ -425,6 +675,17 @@ export class SinglePlayerGame {
 
   public getLevels(): LevelData[] {
     return CAMPAIGN_LEVELS;
+  }
+
+  private getCharacterColor(): number {
+    switch (this.characterType) {
+      case CharacterType.GIRL_PIRATE:
+        return 0x9b59b6; // Purple
+      case CharacterType.OCTOPUS:
+        return 0x8e44ad; // Deep purple
+      default:
+        return 0xe74c3c; // Red (classic pirate)
+    }
   }
 }
 
