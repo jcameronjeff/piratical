@@ -29,6 +29,8 @@ export class SoundManager {
   private sfxVolume: number = 0.7;
   private musicEnabled: boolean = true;
   private sfxEnabled: boolean = true;
+  private droneOscillator: OscillatorNode | null = null;
+  private droneGain: GainNode | null = null;
 
   constructor() {
     // Initialize audio context (will be created on first user interaction)
@@ -329,8 +331,8 @@ export class SoundManager {
   }
 
   /**
-   * Generate simple ambient pirate music using Web Audio API
-   * Creates a looping sea shanty-like melody
+   * Generate epic pirate music inspired by Pirates of the Caribbean
+   * Features driving 6/8 rhythm, D minor key, and swashbuckling orchestral feel
    */
   private startGeneratedMusic() {
     if (!this.audioContext) {
@@ -343,54 +345,272 @@ export class SoundManager {
     const ctx = this.audioContext;
     this.ensureAudioContext();
 
-    // Create a simple sea shanty melody
-    // Notes in a minor key (pirate feel): A, C, D, E, G
-    const melody = [
-      { note: 220, duration: 0.5 }, // A3
-      { note: 262, duration: 0.5 }, // C4
-      { note: 294, duration: 0.5 }, // D4
-      { note: 330, duration: 0.5 }, // E4
-      { note: 392, duration: 0.5 }, // G4
-      { note: 330, duration: 0.5 }, // E4
-      { note: 294, duration: 0.5 }, // D4
-      { note: 262, duration: 0.5 }, // C4
+    // Tempo: Fast 6/8 feel (like He's a Pirate)
+    const tempo = 160; // BPM
+    const beatDuration = 60 / tempo;
+    const eighthNote = beatDuration / 2;
+
+    // D minor scale frequencies
+    const D3 = 147, F3 = 175, G3 = 196, A3 = 220, Bb3 = 233, C4 = 262;
+    const D4 = 294, E4 = 330, F4 = 349, G4 = 392, A4 = 440, Bb4 = 466, C5 = 523, D5 = 587;
+
+    // Epic melodic phrases inspired by the swashbuckling theme
+    const epicPhrases = [
+      // Phrase 1: The iconic opening-style motif (driving, repetitive)
+      [
+        { note: D4, duration: eighthNote },
+        { note: D4, duration: eighthNote },
+        { note: D4, duration: eighthNote },
+        { note: D4, duration: eighthNote },
+        { note: D4, duration: eighthNote },
+        { note: E4, duration: eighthNote },
+        { note: F4, duration: eighthNote * 2 },
+        { note: F4, duration: eighthNote },
+        { note: F4, duration: eighthNote },
+        { note: F4, duration: eighthNote },
+        { note: G4, duration: eighthNote },
+        { note: E4, duration: eighthNote * 2 },
+      ],
+      // Phrase 2: Continuation with dramatic leap
+      [
+        { note: E4, duration: eighthNote },
+        { note: E4, duration: eighthNote },
+        { note: E4, duration: eighthNote },
+        { note: E4, duration: eighthNote },
+        { note: F4, duration: eighthNote },
+        { note: D4, duration: eighthNote },
+        { note: D4, duration: eighthNote * 3 },
+        { note: A4, duration: eighthNote },
+        { note: A4, duration: eighthNote },
+        { note: A4, duration: eighthNote * 2 },
+      ],
+      // Phrase 3: Soaring high section
+      [
+        { note: A4, duration: eighthNote },
+        { note: A4, duration: eighthNote },
+        { note: A4, duration: eighthNote },
+        { note: A4, duration: eighthNote },
+        { note: A4, duration: eighthNote },
+        { note: Bb4, duration: eighthNote },
+        { note: C5, duration: eighthNote * 2 },
+        { note: C5, duration: eighthNote },
+        { note: C5, duration: eighthNote },
+        { note: C5, duration: eighthNote },
+        { note: D5, duration: eighthNote },
+        { note: Bb4, duration: eighthNote * 2 },
+      ],
+      // Phrase 4: Resolution with power
+      [
+        { note: Bb4, duration: eighthNote },
+        { note: Bb4, duration: eighthNote },
+        { note: A4, duration: eighthNote },
+        { note: A4, duration: eighthNote },
+        { note: G4, duration: eighthNote },
+        { note: G4, duration: eighthNote },
+        { note: F4, duration: eighthNote },
+        { note: E4, duration: eighthNote },
+        { note: F4, duration: eighthNote },
+        { note: D4, duration: eighthNote * 4 },
+      ],
     ];
 
-    const playMelody = () => {
-      if (!this.musicEnabled || !ctx) return;
+    // Bass line patterns (driving ostinato)
+    const bassPatterns = [
+      [D3, D3, D3, A3, A3, A3], // i chord
+      [D3, D3, D3, A3, A3, A3], // i chord
+      [F3, F3, F3, C4, C4, C4], // III chord
+      [Bb3, Bb3, A3, A3, D3, D3], // Resolution
+    ];
 
-      const now = ctx.currentTime;
-      let currentTime = now;
+    // Create master gain for overall volume control
+    const masterGain = ctx.createGain();
+    masterGain.connect(ctx.destination);
+    masterGain.gain.value = this.musicVolume;
 
-      melody.forEach(({ note, duration }) => {
+    // Create subtle reverb-like effect with delay
+    const delayNode = ctx.createDelay();
+    const delayGain = ctx.createGain();
+    delayNode.delayTime.value = 0.1;
+    delayGain.gain.value = 0.2;
+    delayNode.connect(delayGain);
+    delayGain.connect(masterGain);
+
+    // Drone for epic sustained feel (strings simulation)
+    this.droneOscillator = ctx.createOscillator();
+    this.droneGain = ctx.createGain();
+    this.droneOscillator.type = 'sawtooth';
+    this.droneOscillator.frequency.value = D3;
+    
+    // Add slight vibrato to drone
+    const vibratoOsc = ctx.createOscillator();
+    const vibratoGain = ctx.createGain();
+    vibratoOsc.frequency.value = 5; // 5Hz vibrato
+    vibratoGain.gain.value = 3; // Subtle pitch variation
+    vibratoOsc.connect(vibratoGain);
+    vibratoGain.connect(this.droneOscillator.frequency);
+    vibratoOsc.start();
+    
+    this.droneGain.connect(masterGain);
+    this.droneGain.gain.value = 0.06;
+    this.droneOscillator.connect(this.droneGain);
+    this.droneOscillator.start();
+
+    // Play driving percussion (6/8 feel)
+    const playPercussion = (startTime: number, duration: number) => {
+      const numBeats = Math.floor(duration / (eighthNote * 3)); // Groups of 3 eighth notes
+      
+      for (let i = 0; i < numBeats * 3; i++) {
+        const time = startTime + i * eighthNote;
+        const isDownbeat = i % 3 === 0;
+        const isStrong = i % 6 === 0;
+        
+        // Kick-like sound on downbeats
+        if (isDownbeat) {
+          const kick = ctx.createOscillator();
+          const kickGain = ctx.createGain();
+          kick.type = 'sine';
+          kick.frequency.setValueAtTime(isStrong ? 100 : 80, time);
+          kick.frequency.exponentialRampToValueAtTime(40, time + 0.08);
+          kickGain.connect(masterGain);
+          kickGain.gain.setValueAtTime(isStrong ? 0.15 : 0.1, time);
+          kickGain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+          kick.connect(kickGain);
+          kick.start(time);
+          kick.stop(time + 0.1);
+        }
+        
+        // Hi-hat like sound for rhythm
+        const noise = ctx.createOscillator();
+        const noiseGain = ctx.createGain();
+        noise.type = 'square';
+        noise.frequency.value = 800 + Math.random() * 400;
+        noiseGain.connect(masterGain);
+        noiseGain.gain.setValueAtTime(isDownbeat ? 0.03 : 0.015, time);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
+        noise.connect(noiseGain);
+        noise.start(time);
+        noise.stop(time + 0.03);
+      }
+    };
+
+    // Play bass line
+    const playBass = (startTime: number, pattern: number[]) => {
+      pattern.forEach((freq, i) => {
+        const time = startTime + i * eighthNote;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         
-        osc.type = 'triangle'; // Softer sound
-        osc.frequency.value = note;
+        osc.type = 'sawtooth';
+        osc.frequency.value = freq;
         
-        gain.connect(ctx.destination);
-        gain.gain.value = this.musicVolume * 0.15; // Quiet background music
+        gain.connect(masterGain);
+        gain.gain.setValueAtTime(0.08, time);
+        gain.gain.exponentialRampToValueAtTime(0.02, time + eighthNote * 0.9);
         
         osc.connect(gain);
+        osc.start(time);
+        osc.stop(time + eighthNote);
+      });
+    };
+
+    // Play melody with strings-like sound
+    const playMelody = (startTime: number, phrase: typeof epicPhrases[0]) => {
+      let currentTime = startTime;
+      
+      phrase.forEach(({ note, duration }, i) => {
+        // Main voice
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = 'sawtooth';
+        osc.frequency.value = note;
+        
+        // Add slight detune for richness
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sawtooth';
+        osc2.frequency.value = note * 1.003; // Slight detune
+        osc2.detune.value = 5;
+        
+        gain.connect(masterGain);
+        gain.connect(delayNode); // Send to delay for reverb effect
+        gain2.connect(masterGain);
+        
+        // Dynamic envelope - attack and sustain
+        const attack = 0.02;
+        gain.gain.setValueAtTime(0.001, currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.12, currentTime + attack);
+        gain.gain.setValueAtTime(0.1, currentTime + attack);
+        gain.gain.exponentialRampToValueAtTime(0.01, currentTime + duration);
+        
+        gain2.gain.setValueAtTime(0.001, currentTime);
+        gain2.gain.exponentialRampToValueAtTime(0.05, currentTime + attack);
+        gain2.gain.exponentialRampToValueAtTime(0.01, currentTime + duration);
+        
+        osc.connect(gain);
+        osc2.connect(gain2);
         osc.start(currentTime);
-        osc.stop(currentTime + duration);
+        osc.stop(currentTime + duration + 0.05);
+        osc2.start(currentTime);
+        osc2.stop(currentTime + duration + 0.05);
         
         currentTime += duration;
       });
-
-      // Loop the melody
-      setTimeout(() => {
-        if (this.musicEnabled) {
-          playMelody();
-        }
-      }, currentTime * 1000 - now * 1000);
+      
+      return currentTime - startTime; // Return total duration
     };
 
-    playMelody();
+    let phraseIndex = 0;
+
+    const playSection = () => {
+      if (!this.musicEnabled || !ctx) return;
+
+      const now = ctx.currentTime;
+      const phrase = epicPhrases[phraseIndex];
+      const bassPattern = bassPatterns[phraseIndex];
+      
+      // Calculate duration
+      const phraseDuration = phrase.reduce((sum, note) => sum + note.duration, 0);
+      
+      // Play all elements together
+      playPercussion(now, phraseDuration);
+      playBass(now, bassPattern);
+      playMelody(now, phrase);
+      
+      // Update drone pitch based on phrase (for harmonic movement)
+      if (this.droneOscillator) {
+        const droneNote = phraseIndex === 2 ? F3 : D3;
+        this.droneOscillator.frequency.setValueAtTime(droneNote, now);
+      }
+
+      // Move to next phrase
+      phraseIndex = (phraseIndex + 1) % epicPhrases.length;
+
+      // Schedule next phrase
+      setTimeout(() => {
+        if (this.musicEnabled) {
+          playSection();
+        } else {
+          if (this.droneOscillator) {
+            this.droneOscillator.stop();
+            this.droneOscillator = null;
+            this.droneGain = null;
+          }
+        }
+      }, phraseDuration * 1000);
+    };
+
+    // Start playing!
+    playSection();
   }
 
   private stopGeneratedMusic() {
+    // Stop the drone oscillator
+    if (this.droneOscillator) {
+      this.droneOscillator.stop();
+      this.droneOscillator = null;
+      this.droneGain = null;
+    }
     // Generated music is handled by setTimeout, so we just stop the flag
     // The music will naturally stop when musicEnabled is false
   }

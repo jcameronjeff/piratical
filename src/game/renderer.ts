@@ -387,28 +387,59 @@ class ScreenEffects {
     return offset;
   }
 
-  // Draw vignette overlay
+  // Draw vignette overlay using corner shadows (safer approach)
   drawVignette(width: number, height: number, intensity: number = 0.4) {
     this.vignetteGraphics.clear();
     
-    // Create radial gradient effect with multiple rings
-    const cx = width / 2;
-    const cy = height / 2;
-    const maxRadius = Math.sqrt(cx * cx + cy * cy);
+    // Draw corner shadows instead of using cut()
+    const cornerSize = 300;
     
-    for (let i = 5; i >= 0; i--) {
-      const ratio = (i / 5);
-      const radius = maxRadius * (0.6 + ratio * 0.4);
-      const alpha = (1 - ratio) * intensity;
-      
+    // Top-left corner
+    for (let i = 0; i < 10; i++) {
+      const alpha = intensity * (1 - i / 10) * 0.15;
+      const offset = i * 30;
       this.vignetteGraphics.fill({ color: 0x000000, alpha });
-      this.vignetteGraphics.rect(0, 0, width, height);
+      this.vignetteGraphics.moveTo(0, 0);
+      this.vignetteGraphics.lineTo(cornerSize - offset, 0);
+      this.vignetteGraphics.quadraticCurveTo(offset, offset, 0, cornerSize - offset);
+      this.vignetteGraphics.closePath();
       this.vignetteGraphics.fill();
-      
-      // Cut out the inner circle
-      this.vignetteGraphics.fill({ color: 0x000000, alpha: 0 });
-      this.vignetteGraphics.circle(cx, cy, radius);
-      this.vignetteGraphics.cut();
+    }
+    
+    // Top-right corner
+    for (let i = 0; i < 10; i++) {
+      const alpha = intensity * (1 - i / 10) * 0.15;
+      const offset = i * 30;
+      this.vignetteGraphics.fill({ color: 0x000000, alpha });
+      this.vignetteGraphics.moveTo(width, 0);
+      this.vignetteGraphics.lineTo(width - cornerSize + offset, 0);
+      this.vignetteGraphics.quadraticCurveTo(width - offset, offset, width, cornerSize - offset);
+      this.vignetteGraphics.closePath();
+      this.vignetteGraphics.fill();
+    }
+    
+    // Bottom-left corner
+    for (let i = 0; i < 10; i++) {
+      const alpha = intensity * (1 - i / 10) * 0.15;
+      const offset = i * 30;
+      this.vignetteGraphics.fill({ color: 0x000000, alpha });
+      this.vignetteGraphics.moveTo(0, height);
+      this.vignetteGraphics.lineTo(cornerSize - offset, height);
+      this.vignetteGraphics.quadraticCurveTo(offset, height - offset, 0, height - cornerSize + offset);
+      this.vignetteGraphics.closePath();
+      this.vignetteGraphics.fill();
+    }
+    
+    // Bottom-right corner
+    for (let i = 0; i < 10; i++) {
+      const alpha = intensity * (1 - i / 10) * 0.15;
+      const offset = i * 30;
+      this.vignetteGraphics.fill({ color: 0x000000, alpha });
+      this.vignetteGraphics.moveTo(width, height);
+      this.vignetteGraphics.lineTo(width - cornerSize + offset, height);
+      this.vignetteGraphics.quadraticCurveTo(width - offset, height - offset, width, height - cornerSize + offset);
+      this.vignetteGraphics.closePath();
+      this.vignetteGraphics.fill();
     }
   }
 
@@ -504,8 +535,20 @@ export class GameRenderer {
     
     this.app.stage.addChild(this.uiContainer);
     
-    // Draw initial vignette
-    this.screenEffects.drawVignette(800, 600, 0.35);
+    // Hide effects initially (will show when level loads)
+    this.hideEffects();
+  }
+
+  // Show/hide visual effects (useful when naval battle is active)
+  public showEffects() {
+    this.worldContainer.visible = true;
+    this.foregroundEffects.visible = true;
+    this.screenEffects.drawVignette(800, 600, 0.25);
+  }
+
+  public hideEffects() {
+    this.worldContainer.visible = false;
+    this.foregroundEffects.visible = false;
   }
 
   public setPhysics(physics: PhysicsEngine) {
@@ -1625,172 +1668,321 @@ export class GameRenderer {
   private createClassicPirateSprite(color: number): PIXI.Container {
     const container = new PIXI.Container();
     
-    // === BODY (Shirt/Torso) ===
+    // === CAPTAIN JACK - Classic Swashbuckler Style ===
+    // Reference: Red military coat with gold epaulets, tricorn hat with skull
+    
+    // === BODY (Red Military Coat) ===
     const body = new PIXI.Graphics();
-    body.fill(color);
-    body.rect(6, 14, 20, 14); // Torso
+    // Main coat (rich red)
+    body.fill(0xB22222); // Firebrick red
+    body.rect(4, 14, 24, 16); // Torso
     body.fill();
-    // Shirt details - white stripes for classic pirate look
-    body.fill(0xFFFFFF);
-    body.rect(10, 16, 3, 10);
-    body.rect(19, 16, 3, 10);
+    
+    // Coat lapels (darker red inner)
+    body.fill(0x8B0000);
+    body.moveTo(8, 14);
+    body.lineTo(16, 20);
+    body.lineTo(24, 14);
+    body.lineTo(20, 14);
+    body.lineTo(16, 17);
+    body.lineTo(12, 14);
+    body.closePath();
     body.fill();
+    
+    // White shirt underneath
+    body.fill(0xFFF8DC);
+    body.moveTo(12, 14);
+    body.lineTo(16, 18);
+    body.lineTo(20, 14);
+    body.closePath();
+    body.fill();
+    
+    // Gold buttons down center
+    body.fill(0xFFD700);
+    body.circle(16, 20, 1.5);
+    body.circle(16, 24, 1.5);
+    body.circle(16, 28, 1.5);
+    body.fill();
+    
+    // Coat trim (gold edges)
+    body.stroke({ color: 0xDAA520, width: 1.5 });
+    body.moveTo(4, 14);
+    body.lineTo(4, 30);
+    body.stroke();
+    body.moveTo(28, 14);
+    body.lineTo(28, 30);
+    body.stroke();
+    
+    // === GOLD EPAULETS (Shoulder pads) ===
+    const epaulets = new PIXI.Graphics();
+    // Left epaulet
+    epaulets.fill(0xFFD700);
+    epaulets.ellipse(4, 16, 5, 3);
+    epaulets.fill();
+    // Gold fringe
+    epaulets.stroke({ color: 0xDAA520, width: 1 });
+    for (let i = 0; i < 4; i++) {
+      epaulets.moveTo(1 + i * 2, 18);
+      epaulets.lineTo(1 + i * 2, 22);
+      epaulets.stroke();
+    }
+    // Right epaulet
+    epaulets.fill(0xFFD700);
+    epaulets.ellipse(28, 16, 5, 3);
+    epaulets.fill();
+    // Gold fringe
+    for (let i = 0; i < 4; i++) {
+      epaulets.moveTo(25 + i * 2, 18);
+      epaulets.lineTo(25 + i * 2, 22);
+      epaulets.stroke();
+    }
     
     // === PANTS ===
     const pants = new PIXI.Graphics();
-    pants.fill(0x2c1810); // Dark brown pants
-    pants.rect(6, 26, 9, 8); // Left leg
-    pants.rect(17, 26, 9, 8); // Right leg
+    pants.fill(0x1a1a2e); // Dark navy pants
+    pants.rect(6, 28, 9, 8); // Left leg
+    pants.rect(17, 28, 9, 8); // Right leg
     pants.fill();
     
     // === BOOTS ===
     const boots = new PIXI.Graphics();
-    boots.fill(0x1a1a1a); // Black boots
-    boots.rect(4, 32, 11, 4);
-    boots.rect(17, 32, 11, 4);
+    boots.fill(0x2d1810); // Dark brown leather boots
+    boots.rect(4, 34, 11, 4);
+    boots.rect(17, 34, 11, 4);
     boots.fill();
-    // Boot tops
-    boots.fill(0x8B4513);
-    boots.rect(5, 30, 9, 3);
-    boots.rect(18, 30, 9, 3);
+    // Boot cuffs (folded over)
+    boots.fill(0x3d2820);
+    boots.rect(5, 32, 9, 3);
+    boots.rect(18, 32, 9, 3);
+    boots.fill();
+    // Gold buckle accents
+    boots.fill(0xDAA520);
+    boots.rect(8, 33, 3, 2);
+    boots.rect(21, 33, 3, 2);
     boots.fill();
     
     // === HEAD ===
     const head = new PIXI.Graphics();
-    head.fill(0xDEB887); // Skin tone
-    head.circle(16, 8, 10); // Head
+    head.fill(0xDEB887); // Warm skin tone
+    head.circle(16, 8, 10);
     head.fill();
     
     // === FACE ===
     const face = new PIXI.Graphics();
     // Eye patch strap
     face.fill(0x1a1a1a);
-    face.rect(6, 4, 20, 2);
+    face.rect(6, 5, 20, 2);
     face.fill();
-    // Eye (right eye visible)
+    // Eye (right eye visible) - warm brown
     face.fill(0xFFFFFF);
     face.circle(21, 7, 3);
     face.fill();
-    face.fill(0x000000);
-    face.circle(22, 7, 1.5);
+    face.fill(0x4a3728);
+    face.circle(21, 7, 2);
     face.fill();
+    face.fill(0x000000);
+    face.circle(21.5, 7, 1);
+    face.fill();
+    // Eye highlight
+    face.fill(0xFFFFFF);
+    face.circle(20, 6, 0.8);
+    face.fill();
+    
     // Eye patch (left eye)
     face.fill(0x1a1a1a);
     face.circle(11, 7, 4);
     face.fill();
-    // Beard/stubble
-    face.fill(0x3d2314);
-    face.rect(10, 12, 12, 4);
+    
+    // Thick dark beard
+    face.fill(0x1a1a1a);
+    face.moveTo(8, 10);
+    face.quadraticCurveTo(16, 20, 24, 10);
+    face.lineTo(24, 8);
+    face.quadraticCurveTo(16, 14, 8, 8);
+    face.closePath();
     face.fill();
-    // Smile/mouth
-    face.stroke({ color: 0x8B0000, width: 1 });
-    face.moveTo(13, 14);
-    face.quadraticCurveTo(16, 17, 19, 14);
+    
+    // Mustache
+    face.fill(0x1a1a1a);
+    face.ellipse(12, 10, 4, 2);
+    face.ellipse(20, 10, 4, 2);
+    face.fill();
+    
+    // Nose
+    face.fill(0xD2B48C);
+    face.ellipse(16, 9, 2, 1.5);
+    face.fill();
+    
+    // Smirk line
+    face.stroke({ color: 0x8B4513, width: 1 });
+    face.moveTo(18, 12);
+    face.quadraticCurveTo(20, 13, 22, 12);
     face.stroke();
     
-    // === PIRATE HAT ===
+    // Earring (gold hoop on visible side)
+    face.fill(0xFFD700);
+    face.circle(26, 10, 2);
+    face.fill();
+    face.fill(0xDEB887);
+    face.circle(26, 10, 1);
+    face.fill();
+    
+    // === TRICORN HAT with Skull & Crossbones ===
     const hat = new PIXI.Graphics();
-    // Hat base (tricorn style)
+    // Hat base (wide tricorn)
     hat.fill(0x1a1a1a);
-    hat.moveTo(-2, 2);
-    hat.lineTo(34, 2);
-    hat.lineTo(30, -4);
-    hat.lineTo(16, -14);
-    hat.lineTo(2, -4);
+    hat.moveTo(-4, 4);
+    hat.lineTo(36, 4);
+    hat.lineTo(32, -2);
+    hat.quadraticCurveTo(16, -18, 0, -2);
     hat.closePath();
     hat.fill();
-    // Hat band
+    
+    // Hat brim curl-ups (tricorn style)
+    hat.fill(0x2a2a2a);
+    hat.moveTo(-4, 4);
+    hat.quadraticCurveTo(-2, -4, 6, 0);
+    hat.lineTo(4, 4);
+    hat.closePath();
+    hat.fill();
+    hat.moveTo(36, 4);
+    hat.quadraticCurveTo(34, -4, 26, 0);
+    hat.lineTo(28, 4);
+    hat.closePath();
+    hat.fill();
+    
+    // Gold hat band/trim
     hat.fill(0xDAA520);
-    hat.rect(4, -2, 24, 4);
+    hat.rect(4, 0, 24, 4);
     hat.fill();
-    // Skull emblem on hat
+    
+    // === SKULL & CROSSBONES on hat ===
+    // Skull
     hat.fill(0xFFFFFF);
-    hat.circle(16, -1, 3);
+    hat.circle(16, -4, 5);
     hat.fill();
+    // Jaw
+    hat.fill(0xFFFFFF);
+    hat.rect(12, -2, 8, 3);
+    hat.fill();
+    // Eye sockets
     hat.fill(0x1a1a1a);
-    hat.circle(14.5, -1.5, 0.8);
-    hat.circle(17.5, -1.5, 0.8);
+    hat.circle(14, -5, 1.5);
+    hat.circle(18, -5, 1.5);
     hat.fill();
+    // Nose
+    hat.fill(0x1a1a1a);
+    hat.moveTo(16, -4);
+    hat.lineTo(15, -2);
+    hat.lineTo(17, -2);
+    hat.closePath();
+    hat.fill();
+    // Teeth line
+    hat.stroke({ color: 0x1a1a1a, width: 0.5 });
+    for (let i = 0; i < 4; i++) {
+      hat.moveTo(13 + i * 2, -1);
+      hat.lineTo(13 + i * 2, 1);
+      hat.stroke();
+    }
+    // Crossbones behind skull
+    hat.stroke({ color: 0xFFFFFF, width: 2 });
+    hat.moveTo(8, -8);
+    hat.lineTo(24, 0);
+    hat.stroke();
+    hat.moveTo(24, -8);
+    hat.lineTo(8, 0);
+    hat.stroke();
     
     // === SWORD ARM (Animated) ===
     const swordArm = new PIXI.Container();
     swordArm.label = 'swordArm';
     
-    // Arm
+    // Arm with red coat sleeve
     const arm = new PIXI.Graphics();
-    arm.fill(0xDEB887); // Skin
-    arm.rect(0, -2, 12, 5);
+    arm.fill(0xDEB887); // Hand/skin
+    arm.rect(8, -2, 6, 5);
     arm.fill();
-    // Sleeve
-    arm.fill(color);
-    arm.rect(-2, -3, 6, 7);
+    // Red coat sleeve
+    arm.fill(0xB22222);
+    arm.rect(-2, -3, 12, 7);
+    arm.fill();
+    // Gold cuff
+    arm.fill(0xFFD700);
+    arm.rect(6, -3, 4, 7);
     arm.fill();
     
-    // Sword handle
+    // Cutlass sword
     const sword = new PIXI.Graphics();
-    // Guard (crossguard)
-    sword.fill(0xDAA520); // Gold
-    sword.rect(8, -4, 3, 9);
+    // Guard (ornate gold)
+    sword.fill(0xDAA520);
+    sword.ellipse(12, 0, 3, 5);
     sword.fill();
-    // Handle/grip
-    sword.fill(0x4a3728); // Brown leather
-    sword.rect(6, -1, 4, 3);
+    sword.fill(0xFFD700);
+    sword.ellipse(12, 0, 2, 3);
+    sword.fill();
+    // Handle (wrapped leather)
+    sword.fill(0x4a3728);
+    sword.rect(8, -2, 5, 4);
     sword.fill();
     // Pommel
     sword.fill(0xDAA520);
-    sword.circle(5, 0.5, 2);
+    sword.circle(7, 0, 2.5);
     sword.fill();
-    // Blade
-    sword.fill(0xC0C0C0); // Silver
-    sword.moveTo(11, -2);
-    sword.lineTo(32, -1);
-    sword.lineTo(34, 0.5);
-    sword.lineTo(32, 2);
-    sword.lineTo(11, 3);
+    // Curved cutlass blade
+    sword.fill(0xC0C0C0);
+    sword.moveTo(14, -2);
+    sword.quadraticCurveTo(28, -4, 36, 0);
+    sword.lineTo(34, 2);
+    sword.quadraticCurveTo(26, 0, 14, 2);
     sword.closePath();
     sword.fill();
     // Blade shine
-    sword.fill({ color: 0xFFFFFF, alpha: 0.4 });
-    sword.rect(12, -1, 18, 1.5);
+    sword.fill({ color: 0xFFFFFF, alpha: 0.5 });
+    sword.moveTo(16, -1);
+    sword.quadraticCurveTo(26, -2, 33, 0);
+    sword.quadraticCurveTo(26, 0, 16, 1);
+    sword.closePath();
     sword.fill();
-    // Blade edge highlight
-    sword.stroke({ color: 0xE8E8E8, width: 1 });
-    sword.moveTo(11, -2);
-    sword.lineTo(34, 0.5);
-    sword.stroke();
     
     swordArm.addChild(arm);
     swordArm.addChild(sword);
     swordArm.x = 26;
     swordArm.y = 18;
     swordArm.pivot.set(0, 0);
-    swordArm.rotation = -0.3; // Rest position
+    swordArm.rotation = -0.3;
     
     // === LEFT ARM ===
     const leftArm = new PIXI.Graphics();
-    leftArm.fill(0xDEB887); // Skin
-    leftArm.rect(-4, 16, 5, 10);
-    leftArm.fill();
-    // Sleeve
-    leftArm.fill(color);
-    leftArm.rect(-3, 14, 4, 5);
-    leftArm.fill();
-    // Hand/fist
-    leftArm.fill(0xDEB887);
+    leftArm.fill(0xDEB887); // Hand
     leftArm.circle(-1, 27, 3);
     leftArm.fill();
+    // Arm
+    leftArm.fill(0xDEB887);
+    leftArm.rect(-4, 22, 5, 6);
+    leftArm.fill();
+    // Red sleeve
+    leftArm.fill(0xB22222);
+    leftArm.rect(-5, 14, 7, 10);
+    leftArm.fill();
+    // Gold cuff
+    leftArm.fill(0xFFD700);
+    leftArm.rect(-4, 20, 5, 3);
+    leftArm.fill();
     
-    // === BELT ===
+    // === BELT with Gold Buckle ===
     const belt = new PIXI.Graphics();
-    belt.fill(0x3d2314); // Dark brown
-    belt.rect(4, 24, 24, 4);
+    belt.fill(0x2d1810); // Dark leather
+    belt.rect(4, 26, 24, 4);
     belt.fill();
-    // Belt buckle
-    belt.fill(0xDAA520); // Gold
-    belt.rect(13, 23, 6, 5);
+    // Ornate gold buckle
+    belt.fill(0xFFD700);
+    belt.rect(12, 25, 8, 6);
     belt.fill();
-    belt.fill(0x3d2314);
-    belt.rect(14, 24, 4, 3);
+    belt.fill(0xDAA520);
+    belt.rect(13, 26, 6, 4);
+    belt.fill();
+    belt.fill(0x2d1810);
+    belt.rect(14, 27, 4, 2);
     belt.fill();
 
     // Add all parts in correct z-order (back to front)
@@ -1798,6 +1990,7 @@ export class GameRenderer {
     container.addChild(pants);
     container.addChild(boots);
     container.addChild(body);
+    container.addChild(epaulets);
     container.addChild(belt);
     container.addChild(head);
     container.addChild(face);
@@ -1810,175 +2003,273 @@ export class GameRenderer {
   private createGirlPirateSprite(color: number): PIXI.Container {
     const container = new PIXI.Container();
     
-    // === BODY (Corset/Blouse) ===
+    // === SCARLET ROSE - Fierce Corsair Style ===
+    // Reference: Red flowing hair, purple vest/corset, brown leather gloves, pistol
+    
+    // === BODY (Purple Vest over White Blouse) ===
     const body = new PIXI.Graphics();
-    body.fill(color);
-    body.rect(6, 14, 20, 14); // Torso
+    // White blouse base
+    body.fill(0xFFF8F0);
+    body.rect(6, 14, 20, 14);
     body.fill();
-    // Blouse details - lace trim
+    
+    // Purple vest/corset
+    body.fill(0x6B2D5C); // Deep purple/magenta
+    body.moveTo(6, 16);
+    body.lineTo(10, 14);
+    body.lineTo(22, 14);
+    body.lineTo(26, 16);
+    body.lineTo(26, 28);
+    body.lineTo(6, 28);
+    body.closePath();
+    body.fill();
+    
+    // Vest lacing down center
+    body.stroke({ color: 0xFFD700, width: 1 });
+    body.moveTo(14, 16);
+    body.lineTo(18, 18);
+    body.moveTo(14, 20);
+    body.lineTo(18, 22);
+    body.moveTo(14, 24);
+    body.lineTo(18, 26);
+    body.stroke();
+    
+    // Blouse ruffles at neckline
     body.fill(0xFFFFFF);
-    body.rect(6, 14, 20, 3);
+    body.ellipse(16, 15, 6, 2);
     body.fill();
-    // Corset lacing
-    body.stroke({ color: 0xFFFFFF, width: 1 });
-    body.moveTo(16, 17);
-    body.lineTo(12, 20);
-    body.lineTo(16, 23);
-    body.lineTo(12, 26);
-    body.stroke();
-    body.moveTo(16, 17);
-    body.lineTo(20, 20);
-    body.lineTo(16, 23);
-    body.lineTo(20, 26);
-    body.stroke();
     
-    // === SKIRT ===
-    const skirt = new PIXI.Graphics();
-    skirt.fill(0x2c1810); // Dark brown
-    skirt.moveTo(4, 26);
-    skirt.lineTo(28, 26);
-    skirt.lineTo(30, 36);
-    skirt.lineTo(2, 36);
-    skirt.closePath();
-    skirt.fill();
-    // Skirt ruffle
-    skirt.fill(0x3d2314);
-    skirt.rect(2, 34, 28, 2);
-    skirt.fill();
+    // === PANTS (Fitted) ===
+    const pants = new PIXI.Graphics();
+    pants.fill(0x2c1810); // Dark brown leather pants
+    pants.rect(6, 26, 9, 10);
+    pants.rect(17, 26, 9, 10);
+    pants.fill();
     
-    // === BOOTS (Taller, more elegant) ===
+    // === BOOTS (Tall pirate boots) ===
     const boots = new PIXI.Graphics();
-    boots.fill(0x1a1a1a);
-    boots.rect(6, 32, 8, 6);
-    boots.rect(18, 32, 8, 6);
+    boots.fill(0x4a3020); // Brown leather
+    boots.rect(5, 32, 9, 6);
+    boots.rect(18, 32, 9, 6);
     boots.fill();
-    // Boot heels
-    boots.fill(0x8B4513);
-    boots.rect(8, 36, 4, 2);
-    boots.rect(20, 36, 4, 2);
+    // Boot cuffs folded
+    boots.fill(0x5a4030);
+    boots.rect(5, 30, 9, 4);
+    boots.rect(18, 30, 9, 4);
+    boots.fill();
+    // Boot buckles
+    boots.fill(0xDAA520);
+    boots.rect(8, 31, 3, 2);
+    boots.rect(21, 31, 3, 2);
     boots.fill();
     
     // === HEAD ===
     const head = new PIXI.Graphics();
-    head.fill(0xDEB887); // Skin tone
+    head.fill(0xF5DEB3); // Warm skin tone
     head.circle(16, 8, 10);
     head.fill();
     
-    // === HAIR ===
+    // === FLOWING RED HAIR ===
     const hair = new PIXI.Graphics();
-    hair.fill(0xc0392b); // Red hair
+    hair.fill(0xCC3300); // Vibrant red-orange
     // Hair volume on top
-    hair.ellipse(16, 2, 12, 8);
+    hair.ellipse(16, 0, 14, 10);
     hair.fill();
-    // Long flowing hair on sides
+    
+    // Flowing waves on left side
+    hair.moveTo(2, 2);
+    hair.quadraticCurveTo(-6, 12, -2, 24);
+    hair.quadraticCurveTo(0, 30, 4, 34);
+    hair.quadraticCurveTo(0, 26, 2, 20);
+    hair.quadraticCurveTo(0, 14, 2, 2);
+    hair.fill();
+    
+    // More volume on left
     hair.moveTo(4, 4);
-    hair.quadraticCurveTo(-2, 15, 6, 24);
-    hair.quadraticCurveTo(2, 15, 4, 4);
+    hair.quadraticCurveTo(-2, 16, 2, 28);
+    hair.quadraticCurveTo(4, 20, 4, 4);
     hair.fill();
+    
+    // Flowing waves on right side
+    hair.moveTo(30, 2);
+    hair.quadraticCurveTo(38, 12, 34, 24);
+    hair.quadraticCurveTo(32, 30, 28, 34);
+    hair.quadraticCurveTo(32, 26, 30, 20);
+    hair.quadraticCurveTo(32, 14, 30, 2);
+    hair.fill();
+    
+    // More volume on right
     hair.moveTo(28, 4);
-    hair.quadraticCurveTo(34, 15, 26, 24);
-    hair.quadraticCurveTo(30, 15, 28, 4);
+    hair.quadraticCurveTo(34, 16, 30, 28);
+    hair.quadraticCurveTo(28, 20, 28, 4);
+    hair.fill();
+    
+    // Hair highlight streaks
+    hair.fill({ color: 0xFF6633, alpha: 0.6 });
+    hair.ellipse(12, 2, 4, 3);
+    hair.ellipse(20, 1, 3, 2);
     hair.fill();
     
     // === FACE ===
     const face = new PIXI.Graphics();
-    // Eyes (both visible, with makeup)
+    // Eyes (fierce, determined)
     face.fill(0xFFFFFF);
-    face.circle(11, 7, 3);
-    face.circle(21, 7, 3);
+    face.ellipse(11, 7, 3, 2.5);
+    face.ellipse(21, 7, 3, 2.5);
     face.fill();
-    // Green/emerald eyes
-    face.fill(0x2ecc71);
-    face.circle(12, 7, 2);
-    face.circle(22, 7, 2);
+    // Dark green/hazel eyes
+    face.fill(0x2E5D4E);
+    face.circle(11, 7, 2);
+    face.circle(21, 7, 2);
     face.fill();
     face.fill(0x000000);
-    face.circle(12, 7, 1);
-    face.circle(22, 7, 1);
+    face.circle(11, 7, 1);
+    face.circle(21, 7, 1);
     face.fill();
+    // Eye highlights
+    face.fill(0xFFFFFF);
+    face.circle(10, 6, 0.7);
+    face.circle(20, 6, 0.7);
+    face.fill();
+    
+    // Defined eyebrows (fierce look)
+    face.stroke({ color: 0x8B4513, width: 1.5 });
+    face.moveTo(8, 4);
+    face.lineTo(14, 4);
+    face.moveTo(18, 4);
+    face.lineTo(24, 4);
+    face.stroke();
+    
     // Eyelashes
     face.stroke({ color: 0x000000, width: 1 });
     face.moveTo(8, 5);
-    face.lineTo(10, 4);
-    face.moveTo(14, 4);
-    face.lineTo(12, 3);
+    face.lineTo(9, 4);
+    face.moveTo(13, 5);
+    face.lineTo(12, 4);
+    face.moveTo(19, 5);
+    face.lineTo(20, 4);
     face.moveTo(24, 5);
-    face.lineTo(22, 4);
-    face.moveTo(18, 4);
-    face.lineTo(20, 3);
+    face.lineTo(23, 4);
     face.stroke();
+    
     // Nose
-    face.fill(0xD2B48C);
-    face.ellipse(16, 10, 1.5, 1);
-    face.fill();
-    // Lips
-    face.fill(0xc0392b);
-    face.ellipse(16, 13, 3, 1.5);
-    face.fill();
-    // Rosy cheeks
-    face.fill({ color: 0xffb6c1, alpha: 0.5 });
-    face.circle(8, 10, 2);
-    face.circle(24, 10, 2);
+    face.fill(0xE8C8A8);
+    face.ellipse(16, 10, 1.5, 1.2);
     face.fill();
     
-    // === BANDANA ===
-    const bandana = new PIXI.Graphics();
-    bandana.fill(0xc0392b); // Matching red
-    bandana.rect(4, -2, 24, 5);
-    bandana.fill();
-    // Bandana knot tail
-    bandana.moveTo(28, 0);
-    bandana.quadraticCurveTo(36, 4, 32, 12);
-    bandana.quadraticCurveTo(30, 6, 28, 0);
-    bandana.fill();
+    // Full lips
+    face.fill(0xB33333);
+    face.ellipse(16, 13, 3, 1.5);
+    face.fill();
+    // Lip highlight
+    face.fill({ color: 0xFF6666, alpha: 0.5 });
+    face.ellipse(15, 12.5, 1.5, 0.5);
+    face.fill();
+    
+    // Rosy cheeks
+    face.fill({ color: 0xFFB6C1, alpha: 0.4 });
+    face.circle(7, 10, 2.5);
+    face.circle(25, 10, 2.5);
+    face.fill();
     
     // === EARRINGS ===
     const earrings = new PIXI.Graphics();
-    earrings.fill(0xDAA520); // Gold
-    earrings.circle(5, 12, 3);
-    earrings.circle(27, 12, 3);
-    earrings.fill();
     earrings.fill(0xFFD700);
-    earrings.circle(5, 12, 1.5);
-    earrings.circle(27, 12, 1.5);
+    earrings.circle(4, 12, 2.5);
+    earrings.circle(28, 12, 2.5);
+    earrings.fill();
+    earrings.fill(0xDAA520);
+    earrings.circle(4, 12, 1);
+    earrings.circle(28, 12, 1);
     earrings.fill();
     
-    // === SWORD ARM ===
+    // === LEFT ARM WITH PISTOL ===
+    const leftArm = new PIXI.Graphics();
+    // Brown leather glove
+    leftArm.fill(0x5D4037);
+    leftArm.rect(-6, 16, 7, 12);
+    leftArm.fill();
+    leftArm.fill(0x5D4037);
+    leftArm.circle(-2, 29, 3);
+    leftArm.fill();
+    // Glove cuff
+    leftArm.fill(0x6D5047);
+    leftArm.rect(-6, 16, 7, 3);
+    leftArm.fill();
+    
+    // Flintlock pistol
+    leftArm.fill(0x4a4a4a); // Gun barrel
+    leftArm.rect(-16, 20, 14, 3);
+    leftArm.fill();
+    // Barrel tip
+    leftArm.fill(0x3a3a3a);
+    leftArm.circle(-16, 21.5, 2);
+    leftArm.fill();
+    // Wooden grip
+    leftArm.fill(0x5D4037);
+    leftArm.moveTo(-4, 22);
+    leftArm.lineTo(-6, 30);
+    leftArm.lineTo(-2, 30);
+    leftArm.lineTo(0, 22);
+    leftArm.closePath();
+    leftArm.fill();
+    // Trigger guard
+    leftArm.stroke({ color: 0xDAA520, width: 1 });
+    leftArm.moveTo(-4, 24);
+    leftArm.quadraticCurveTo(-6, 28, -2, 28);
+    leftArm.stroke();
+    // Flintlock mechanism
+    leftArm.fill(0xDAA520);
+    leftArm.rect(-6, 19, 3, 4);
+    leftArm.fill();
+    
+    // === SWORD ARM (Animated) ===
     const swordArm = new PIXI.Container();
     swordArm.label = 'swordArm';
     
     const arm = new PIXI.Graphics();
-    arm.fill(0xDEB887);
-    arm.rect(0, -2, 12, 4);
+    // Brown leather glove
+    arm.fill(0x5D4037);
+    arm.rect(6, -2, 8, 5);
     arm.fill();
-    arm.fill(color);
-    arm.rect(-2, -3, 6, 6);
+    // Purple sleeve
+    arm.fill(0x6B2D5C);
+    arm.rect(-2, -3, 10, 7);
+    arm.fill();
+    // White blouse cuff
+    arm.fill(0xFFFFFF);
+    arm.rect(4, -3, 4, 7);
     arm.fill();
     
+    // Elegant rapier
     const sword = new PIXI.Graphics();
-    // Elegant cutlass
+    // Ornate guard
     sword.fill(0xDAA520);
-    sword.rect(8, -3, 2, 7);
+    sword.ellipse(14, 0, 4, 5);
     sword.fill();
+    sword.fill(0xFFD700);
+    sword.ellipse(14, 0, 2.5, 3);
+    sword.fill();
+    // Handle
     sword.fill(0x4a3728);
-    sword.rect(6, -1, 4, 3);
+    sword.rect(10, -2, 5, 4);
     sword.fill();
+    // Pommel
     sword.fill(0xDAA520);
-    sword.circle(5, 0.5, 2);
+    sword.circle(9, 0, 2);
     sword.fill();
-    // Curved blade
-    sword.fill(0xC0C0C0);
-    sword.moveTo(10, -2);
-    sword.quadraticCurveTo(28, -6, 32, 0);
-    sword.lineTo(30, 2);
-    sword.quadraticCurveTo(26, -2, 10, 2);
+    // Thin elegant blade
+    sword.fill(0xD0D0D0);
+    sword.moveTo(16, -1.5);
+    sword.lineTo(38, 0);
+    sword.lineTo(16, 1.5);
     sword.closePath();
     sword.fill();
-    sword.fill({ color: 0xFFFFFF, alpha: 0.4 });
-    sword.moveTo(12, -1);
-    sword.quadraticCurveTo(26, -4, 30, 0);
-    sword.lineTo(28, 1);
-    sword.quadraticCurveTo(24, -2, 12, 0);
+    // Blade shine
+    sword.fill({ color: 0xFFFFFF, alpha: 0.6 });
+    sword.moveTo(18, -0.5);
+    sword.lineTo(35, 0);
+    sword.lineTo(18, 0.5);
     sword.closePath();
     sword.fill();
     
@@ -1988,37 +2279,28 @@ export class GameRenderer {
     swordArm.y = 18;
     swordArm.rotation = -0.3;
     
-    // === LEFT ARM ===
-    const leftArm = new PIXI.Graphics();
-    leftArm.fill(0xDEB887);
-    leftArm.rect(-4, 16, 5, 8);
-    leftArm.fill();
-    leftArm.fill(color);
-    leftArm.rect(-3, 14, 4, 4);
-    leftArm.fill();
-    leftArm.fill(0xDEB887);
-    leftArm.circle(-1, 25, 2.5);
-    leftArm.fill();
-    
     // === BELT ===
     const belt = new PIXI.Graphics();
-    belt.fill(0x8B4513);
-    belt.rect(4, 24, 24, 3);
+    belt.fill(0x4a3020);
+    belt.rect(4, 25, 24, 3);
+    belt.fill();
+    // Ornate belt buckle
+    belt.fill(0xFFD700);
+    belt.rect(13, 24, 6, 5);
     belt.fill();
     belt.fill(0xDAA520);
-    belt.circle(16, 25.5, 2.5);
+    belt.rect(14, 25, 4, 3);
     belt.fill();
 
     // Add all parts
     container.addChild(leftArm);
-    container.addChild(skirt);
+    container.addChild(pants);
     container.addChild(boots);
     container.addChild(body);
     container.addChild(belt);
     container.addChild(hair);
     container.addChild(head);
     container.addChild(face);
-    container.addChild(bandana);
     container.addChild(earrings);
     container.addChild(swordArm);
 
@@ -2028,192 +2310,284 @@ export class GameRenderer {
   private createOctopusSprite(color: number): PIXI.Container {
     const container = new PIXI.Container();
     
-    // === TENTACLES (Back layer) ===
+    // === INKY PETE - Mischievous Purple Octopus ===
+    // Reference: Deep purple octopus with mischievous grin, 8 curling tentacles
+    
+    const mainPurple = 0x7B4B94; // Rich purple
+    const darkPurple = 0x5D3A6E; // Darker shade
+    const lightPurple = 0x9B6BB0; // Highlight
+    const suckerColor = 0xE8D4F0; // Light pink/lavender for suckers
+    
+    // === BACK TENTACLES (Behind body) ===
     const tentaclesBack = new PIXI.Graphics();
-    tentaclesBack.fill(color);
+    tentaclesBack.fill(darkPurple);
     
-    // Back tentacles (will be behind body)
-    // Left back tentacle
-    tentaclesBack.moveTo(4, 22);
-    tentaclesBack.quadraticCurveTo(-4, 32, 0, 40);
-    tentaclesBack.quadraticCurveTo(-2, 36, 4, 32);
-    tentaclesBack.lineTo(8, 22);
+    // Back left tentacle - curling outward
+    tentaclesBack.moveTo(2, 20);
+    tentaclesBack.quadraticCurveTo(-8, 28, -12, 38);
+    tentaclesBack.quadraticCurveTo(-10, 44, -4, 42);
+    tentaclesBack.quadraticCurveTo(-2, 38, 0, 32);
+    tentaclesBack.quadraticCurveTo(2, 26, 6, 20);
     tentaclesBack.closePath();
     tentaclesBack.fill();
     
-    // Right back tentacle
-    tentaclesBack.moveTo(28, 22);
-    tentaclesBack.quadraticCurveTo(36, 32, 32, 40);
-    tentaclesBack.quadraticCurveTo(34, 36, 28, 32);
-    tentaclesBack.lineTo(24, 22);
+    // Back right tentacle - curling outward
+    tentaclesBack.moveTo(30, 20);
+    tentaclesBack.quadraticCurveTo(40, 28, 44, 38);
+    tentaclesBack.quadraticCurveTo(42, 44, 36, 42);
+    tentaclesBack.quadraticCurveTo(34, 38, 32, 32);
+    tentaclesBack.quadraticCurveTo(30, 26, 26, 20);
     tentaclesBack.closePath();
     tentaclesBack.fill();
     
-    // Suction cups on back tentacles
-    tentaclesBack.fill(0x9b59b6);
-    tentaclesBack.circle(2, 34, 2);
-    tentaclesBack.circle(30, 34, 2);
+    // Suckers on back tentacles
+    tentaclesBack.fill(suckerColor);
+    tentaclesBack.circle(-6, 34, 2);
+    tentaclesBack.circle(-2, 38, 1.5);
+    tentaclesBack.circle(38, 34, 2);
+    tentaclesBack.circle(34, 38, 1.5);
     tentaclesBack.fill();
     
-    // === BODY (Head/Mantle) ===
+    // === BODY (Round bulbous head) ===
     const body = new PIXI.Graphics();
-    body.fill(color);
-    body.ellipse(16, 14, 14, 12);
-    body.fill();
-    // Body texture spots
-    body.fill({ color: 0x9b59b6, alpha: 0.5 });
-    body.circle(10, 18, 3);
-    body.circle(22, 18, 3);
-    body.circle(16, 22, 2);
+    // Main body - larger, rounder
+    body.fill(mainPurple);
+    body.ellipse(16, 12, 16, 14);
     body.fill();
     
-    // === TENTACLES (Front layer) ===
+    // Body highlight (3D effect)
+    body.fill({ color: lightPurple, alpha: 0.5 });
+    body.ellipse(12, 6, 8, 6);
+    body.fill();
+    
+    // Body texture - spots/bumps
+    body.fill({ color: darkPurple, alpha: 0.4 });
+    body.circle(8, 16, 3);
+    body.circle(24, 16, 3);
+    body.circle(16, 20, 2.5);
+    body.circle(6, 10, 2);
+    body.circle(26, 10, 2);
+    body.fill();
+    
+    // === FRONT TENTACLES (More dynamic, curly) ===
     const tentaclesFront = new PIXI.Graphics();
-    tentaclesFront.fill(color);
+    tentaclesFront.fill(mainPurple);
     
-    // Front left tentacle
-    tentaclesFront.moveTo(6, 24);
-    tentaclesFront.quadraticCurveTo(2, 36, 8, 44);
-    tentaclesFront.quadraticCurveTo(6, 38, 10, 28);
-    tentaclesFront.lineTo(10, 24);
+    // Front left outer tentacle - curling down and out
+    tentaclesFront.moveTo(4, 22);
+    tentaclesFront.quadraticCurveTo(-2, 32, 0, 42);
+    tentaclesFront.quadraticCurveTo(4, 48, 8, 44);
+    tentaclesFront.quadraticCurveTo(6, 38, 8, 30);
+    tentaclesFront.quadraticCurveTo(8, 26, 8, 22);
     tentaclesFront.closePath();
     tentaclesFront.fill();
     
-    // Front center-left tentacle
-    tentaclesFront.moveTo(10, 24);
-    tentaclesFront.quadraticCurveTo(10, 38, 14, 46);
-    tentaclesFront.quadraticCurveTo(12, 40, 14, 28);
-    tentaclesFront.lineTo(14, 24);
+    // Front left inner tentacle
+    tentaclesFront.moveTo(8, 22);
+    tentaclesFront.quadraticCurveTo(6, 34, 10, 44);
+    tentaclesFront.quadraticCurveTo(12, 48, 14, 44);
+    tentaclesFront.quadraticCurveTo(12, 36, 12, 26);
+    tentaclesFront.lineTo(12, 22);
     tentaclesFront.closePath();
     tentaclesFront.fill();
     
-    // Front center-right tentacle
-    tentaclesFront.moveTo(18, 24);
-    tentaclesFront.quadraticCurveTo(22, 38, 18, 46);
-    tentaclesFront.quadraticCurveTo(20, 40, 18, 28);
-    tentaclesFront.lineTo(22, 24);
+    // Front right inner tentacle
+    tentaclesFront.moveTo(20, 22);
+    tentaclesFront.quadraticCurveTo(22, 34, 18, 44);
+    tentaclesFront.quadraticCurveTo(16, 48, 18, 44);
+    tentaclesFront.quadraticCurveTo(20, 36, 20, 26);
+    tentaclesFront.lineTo(24, 22);
     tentaclesFront.closePath();
     tentaclesFront.fill();
     
-    // Front right tentacle
-    tentaclesFront.moveTo(22, 24);
-    tentaclesFront.quadraticCurveTo(30, 36, 24, 44);
-    tentaclesFront.quadraticCurveTo(26, 38, 22, 28);
-    tentaclesFront.lineTo(26, 24);
+    // Front right outer tentacle - curling down and out
+    tentaclesFront.moveTo(28, 22);
+    tentaclesFront.quadraticCurveTo(34, 32, 32, 42);
+    tentaclesFront.quadraticCurveTo(28, 48, 24, 44);
+    tentaclesFront.quadraticCurveTo(26, 38, 24, 30);
+    tentaclesFront.quadraticCurveTo(24, 26, 24, 22);
     tentaclesFront.closePath();
     tentaclesFront.fill();
     
-    // Suction cups on front tentacles
-    tentaclesFront.fill(0x9b59b6);
-    tentaclesFront.circle(8, 36, 2);
-    tentaclesFront.circle(12, 40, 2);
-    tentaclesFront.circle(20, 40, 2);
-    tentaclesFront.circle(24, 36, 2);
+    // Suckers on front tentacles
+    tentaclesFront.fill(suckerColor);
+    // Left outer
+    tentaclesFront.circle(4, 34, 2);
+    tentaclesFront.circle(6, 40, 1.5);
+    // Left inner
+    tentaclesFront.circle(10, 36, 1.8);
+    tentaclesFront.circle(11, 42, 1.3);
+    // Right inner
+    tentaclesFront.circle(22, 36, 1.8);
+    tentaclesFront.circle(21, 42, 1.3);
+    // Right outer
+    tentaclesFront.circle(28, 34, 2);
+    tentaclesFront.circle(26, 40, 1.5);
     tentaclesFront.fill();
     
-    // === EYES ===
-    const eyes = new PIXI.Graphics();
-    // Large octopus eyes
-    eyes.fill(0xFFFFFF);
-    eyes.ellipse(10, 12, 5, 6);
-    eyes.ellipse(22, 12, 5, 6);
-    eyes.fill();
-    // Pupils
-    eyes.fill(0x000000);
-    eyes.ellipse(11, 12, 3, 4);
-    eyes.ellipse(23, 12, 3, 4);
-    eyes.fill();
-    // Eye shine
-    eyes.fill(0xFFFFFF);
-    eyes.circle(9, 10, 1.5);
-    eyes.circle(21, 10, 1.5);
-    eyes.fill();
+    // === FACE - MISCHIEVOUS EXPRESSION ===
+    const face = new PIXI.Graphics();
     
-    // === PIRATE HAT ===
+    // Large expressive eyes (yellow/gold for mischief)
+    face.fill(0xFFFFE0); // Cream white
+    face.ellipse(10, 10, 6, 7);
+    face.ellipse(22, 10, 6, 7);
+    face.fill();
+    
+    // Yellow irises
+    face.fill(0xFFD700);
+    face.ellipse(11, 10, 4, 5);
+    face.ellipse(23, 10, 4, 5);
+    face.fill();
+    
+    // Pupils (looking to side for mischief)
+    face.fill(0x000000);
+    face.ellipse(12, 10, 2.5, 3.5);
+    face.ellipse(24, 10, 2.5, 3.5);
+    face.fill();
+    
+    // Eye shine (larger, more cartoonish)
+    face.fill(0xFFFFFF);
+    face.circle(9, 8, 2);
+    face.circle(21, 8, 2);
+    face.fill();
+    face.fill(0xFFFFFF);
+    face.circle(12, 12, 1);
+    face.circle(24, 12, 1);
+    face.fill();
+    
+    // Mischievous raised eyebrow effect (eyelid shadows)
+    face.fill({ color: darkPurple, alpha: 0.6 });
+    face.moveTo(5, 4);
+    face.quadraticCurveTo(10, 2, 15, 5);
+    face.lineTo(15, 6);
+    face.quadraticCurveTo(10, 4, 5, 6);
+    face.closePath();
+    face.fill();
+    
+    // Right eyebrow raised higher (mischievous)
+    face.moveTo(17, 3);
+    face.quadraticCurveTo(22, 1, 27, 4);
+    face.lineTo(27, 5);
+    face.quadraticCurveTo(22, 3, 17, 5);
+    face.closePath();
+    face.fill();
+    
+    // WIDE MISCHIEVOUS GRIN
+    face.fill(0x2D1B2E); // Dark mouth
+    face.moveTo(8, 18);
+    face.quadraticCurveTo(16, 26, 24, 18);
+    face.quadraticCurveTo(16, 22, 8, 18);
+    face.closePath();
+    face.fill();
+    
+    // Teeth showing in grin
+    face.fill(0xFFFFFF);
+    face.rect(12, 18, 3, 2);
+    face.rect(17, 18, 3, 2);
+    face.fill();
+    
+    // Sly smile line
+    face.stroke({ color: darkPurple, width: 1.5 });
+    face.moveTo(24, 18);
+    face.quadraticCurveTo(26, 16, 28, 17);
+    face.stroke();
+    
+    // === PIRATE HAT (Small, tilted for swagger) ===
     const hat = new PIXI.Graphics();
+    // Tilted tricorn
     hat.fill(0x1a1a1a);
-    hat.moveTo(0, 6);
-    hat.lineTo(32, 6);
-    hat.lineTo(28, 0);
-    hat.lineTo(16, -10);
-    hat.lineTo(4, 0);
+    hat.moveTo(-2, 2);
+    hat.lineTo(34, 4);
+    hat.lineTo(30, -2);
+    hat.quadraticCurveTo(16, -14, 2, -2);
     hat.closePath();
     hat.fill();
+    
     // Hat band
     hat.fill(0xDAA520);
-    hat.rect(6, 2, 20, 4);
-    hat.fill();
-    // Skull on hat
-    hat.fill(0xFFFFFF);
-    hat.circle(16, 3, 3);
-    hat.fill();
-    hat.fill(0x1a1a1a);
-    hat.circle(14.5, 2.5, 0.8);
-    hat.circle(17.5, 2.5, 0.8);
+    hat.rect(4, -1, 24, 4);
     hat.fill();
     
-    // === SWORD ARM (Using a tentacle) ===
+    // Skull emblem
+    hat.fill(0xFFFFFF);
+    hat.circle(16, 0, 3);
+    hat.fill();
+    hat.fill(0x1a1a1a);
+    hat.circle(14.5, -0.5, 0.8);
+    hat.circle(17.5, -0.5, 0.8);
+    hat.fill();
+    // Crossbones
+    hat.stroke({ color: 0xFFFFFF, width: 1.5 });
+    hat.moveTo(11, -2);
+    hat.lineTo(21, 3);
+    hat.stroke();
+    hat.moveTo(21, -2);
+    hat.lineTo(11, 3);
+    hat.stroke();
+    
+    // === SWORD ARM (Tentacle holding cutlass) ===
     const swordArm = new PIXI.Container();
     swordArm.label = 'swordArm';
     
-    // Tentacle arm
+    // Muscular tentacle arm
     const tentacleArm = new PIXI.Graphics();
-    tentacleArm.fill(color);
-    tentacleArm.moveTo(0, -2);
-    tentacleArm.quadraticCurveTo(8, -4, 14, -2);
-    tentacleArm.lineTo(14, 3);
-    tentacleArm.quadraticCurveTo(8, 1, 0, 3);
+    tentacleArm.fill(mainPurple);
+    tentacleArm.moveTo(0, -3);
+    tentacleArm.quadraticCurveTo(8, -5, 16, -3);
+    tentacleArm.lineTo(18, 4);
+    tentacleArm.quadraticCurveTo(10, 2, 0, 4);
     tentacleArm.closePath();
     tentacleArm.fill();
-    // Suction cups on arm
-    tentacleArm.fill(0x9b59b6);
+    
+    // Tentacle curl around sword hilt
+    tentacleArm.fill(mainPurple);
+    tentacleArm.ellipse(14, 0, 5, 4);
+    tentacleArm.fill();
+    
+    // Suckers on sword arm
+    tentacleArm.fill(suckerColor);
     tentacleArm.circle(4, 2, 1.5);
-    tentacleArm.circle(8, 2, 1.5);
+    tentacleArm.circle(8, 3, 1.5);
+    tentacleArm.circle(12, 3, 1.3);
     tentacleArm.fill();
     
     // Cutlass
     const sword = new PIXI.Graphics();
+    // Guard
     sword.fill(0xDAA520);
-    sword.rect(12, -3, 2, 7);
+    sword.ellipse(16, 0, 3, 5);
     sword.fill();
-    sword.fill(0x4a3728);
-    sword.rect(10, -1, 4, 3);
+    sword.fill(0xFFD700);
+    sword.ellipse(16, 0, 1.5, 3);
     sword.fill();
+    // Blade
     sword.fill(0xC0C0C0);
-    sword.moveTo(14, -2);
-    sword.lineTo(32, -1);
-    sword.lineTo(34, 0.5);
-    sword.lineTo(32, 2);
-    sword.lineTo(14, 3);
+    sword.moveTo(18, -2);
+    sword.quadraticCurveTo(32, -3, 38, 0);
+    sword.lineTo(36, 2);
+    sword.quadraticCurveTo(30, 1, 18, 2);
     sword.closePath();
     sword.fill();
-    sword.fill({ color: 0xFFFFFF, alpha: 0.4 });
-    sword.rect(15, -1, 16, 1.5);
+    // Blade shine
+    sword.fill({ color: 0xFFFFFF, alpha: 0.5 });
+    sword.moveTo(20, -1);
+    sword.quadraticCurveTo(30, -1.5, 35, 0);
+    sword.quadraticCurveTo(30, 0.5, 20, 1);
+    sword.closePath();
     sword.fill();
     
     swordArm.addChild(tentacleArm);
     swordArm.addChild(sword);
     swordArm.x = 26;
-    swordArm.y = 16;
+    swordArm.y = 14;
     swordArm.rotation = -0.3;
-    
-    // === EYE PATCH ===
-    const eyePatch = new PIXI.Graphics();
-    // Strap
-    eyePatch.fill(0x1a1a1a);
-    eyePatch.rect(4, 8, 24, 2);
-    eyePatch.fill();
-    // Patch over left eye
-    eyePatch.fill(0x1a1a1a);
-    eyePatch.ellipse(10, 12, 5, 6);
-    eyePatch.fill();
 
     // Add all parts in z-order
     container.addChild(tentaclesBack);
     container.addChild(body);
     container.addChild(tentaclesFront);
-    container.addChild(eyes);
-    container.addChild(eyePatch);
+    container.addChild(face);
     container.addChild(hat);
     container.addChild(swordArm);
 
@@ -2277,148 +2651,544 @@ export class GameRenderer {
     const width = level.width;
     const height = level.height;
 
-    // 1. Sky Gradient (simulated with rects)
-    g.fill(0x87CEEB); // Sky blue
-    g.rect(0, 0, width, height);
-    g.fill();
-
-    // 2. Sun
-    g.fill(0xFFD700);
-    g.circle(200, 100, 40);
-    g.fill();
-    // Sun rays
-    g.fill({ color: 0xFFD700, alpha: 0.3 });
-    g.circle(200, 100, 60);
-    g.fill();
-
-    // 3. Clouds
-    g.fill({ color: 0xFFFFFF, alpha: 0.8 });
-    const drawCloud = (cx: number, cy: number, scale: number = 1) => {
-      g.circle(cx, cy, 30 * scale);
-      g.circle(cx + 25 * scale, cy - 10 * scale, 35 * scale);
-      g.circle(cx + 50 * scale, cy, 30 * scale);
-    };
+    // === PAINTERLY SUNSET PARADISE STYLE ===
+    // Reference: Beautiful warm sunset with pink/purple sky, calm teal ocean, sandy beach
     
-    for (let i = 0; i < width; i += 400) {
-      drawCloud(i + 50, 100 + Math.random() * 50, 0.8 + Math.random() * 0.4);
-    }
-
-    // 4. Ocean in background (horizon)
-    g.fill(0x006994);
-    g.rect(0, height - 200, width, 200);
+    // 1. SKY - Rich sunset gradient (bottom to top: yellow -> orange -> pink -> purple -> blue)
+    const skyHeight = height * 0.55;
+    
+    // Bottom sky - warm golden yellow
+    g.fill(0xFFD93D);
+    g.rect(0, 0, width, skyHeight * 0.15);
     g.fill();
     
-    // Waves on horizon
-    g.fill({ color: 0x0077be });
-    for (let i = 0; i < width; i += 40) {
-      g.circle(i, height - 200, 20);
-    }
-    g.fill();
-
-    // 5. Distant Islands
-    g.fill(0x2E8B57); // Sea Green
-    g.moveTo(500, height - 200);
-    g.quadraticCurveTo(600, height - 350, 700, height - 200);
+    // Orange band
+    g.fill(0xFFB347);
+    g.rect(0, skyHeight * 0.15, width, skyHeight * 0.15);
     g.fill();
     
-    g.fill(0x2E8B57);
-    g.moveTo(1200, height - 200);
-    g.quadraticCurveTo(1350, height - 300, 1500, height - 200);
+    // Peach/coral transition
+    g.fill(0xFFA07A);
+    g.rect(0, skyHeight * 0.30, width, skyHeight * 0.15);
     g.fill();
-
-    // 6. Palm Trees in background
-    const drawPalm = (px: number, py: number) => {
-      // Trunk
-      g.stroke({ color: 0x8B4513, width: 4 });
-      g.moveTo(px, py);
-      g.quadraticCurveTo(px + 10, py - 50, px - 5, py - 100);
-      g.stroke();
+    
+    // Pink band
+    g.fill(0xE88D9D);
+    g.rect(0, skyHeight * 0.45, width, skyHeight * 0.15);
+    g.fill();
+    
+    // Soft magenta/pink
+    g.fill(0xD67BA0);
+    g.rect(0, skyHeight * 0.60, width, skyHeight * 0.15);
+    g.fill();
+    
+    // Purple transition
+    g.fill(0xA56FA8);
+    g.rect(0, skyHeight * 0.75, width, skyHeight * 0.15);
+    g.fill();
+    
+    // Deeper purple/blue at top
+    g.fill(0x7B68A6);
+    g.rect(0, skyHeight * 0.90, width, skyHeight * 0.10 + 10);
+    g.fill();
+    
+    // 2. SUN - Large glowing sun near horizon
+    const sunX = 350;
+    const sunY = skyHeight * 0.35;
+    
+    // Outer glow (very soft)
+    g.fill({ color: 0xFFFFE0, alpha: 0.15 });
+    g.circle(sunX, sunY, 150);
+    g.fill();
+    
+    // Middle glow
+    g.fill({ color: 0xFFF8DC, alpha: 0.25 });
+    g.circle(sunX, sunY, 110);
+    g.fill();
+    
+    // Inner glow
+    g.fill({ color: 0xFFEFB5, alpha: 0.4 });
+    g.circle(sunX, sunY, 80);
+    g.fill();
+    
+    // Sun body (soft cream/yellow)
+    g.fill(0xFFF8E7);
+    g.circle(sunX, sunY, 55);
+    g.fill();
+    
+    // Sun highlight
+    g.fill({ color: 0xFFFFFF, alpha: 0.5 });
+    g.circle(sunX - 15, sunY - 15, 25);
+    g.fill();
+    
+    // 3. FLUFFY PAINTERLY CLOUDS
+    const drawPuffyCloud = (cx: number, cy: number, scale: number = 1, warmth: number = 0) => {
+      // Cloud colors range from white to pink/orange based on warmth
+      const baseColor = warmth > 0.5 ? 0xFFE4D4 : 0xFFFFFF;
+      const shadowColor = warmth > 0.5 ? 0xE8A890 : 0xD8C0D8;
       
-      // Leaves
-      g.stroke({ color: 0x228B22, width: 3 });
-      const topX = px - 5;
-      const topY = py - 100;
-      g.moveTo(topX, topY); g.quadraticCurveTo(topX - 20, topY - 20, topX - 30, topY + 10); g.stroke();
-      g.moveTo(topX, topY); g.quadraticCurveTo(topX + 20, topY - 20, topX + 30, topY + 10); g.stroke();
-      g.moveTo(topX, topY); g.quadraticCurveTo(topX, topY - 30, topX + 10, topY - 10); g.stroke();
+      // Main cloud puffs
+      g.fill({ color: baseColor, alpha: 0.95 });
+      g.circle(cx, cy, 35 * scale);
+      g.circle(cx + 30 * scale, cy - 10 * scale, 45 * scale);
+      g.circle(cx + 65 * scale, cy - 5 * scale, 40 * scale);
+      g.circle(cx + 95 * scale, cy + 5 * scale, 30 * scale);
+      g.circle(cx + 15 * scale, cy + 10 * scale, 25 * scale);
+      g.circle(cx + 50 * scale, cy + 8 * scale, 30 * scale);
+      g.fill();
+      
+      // Cloud bottom shadow
+      g.fill({ color: shadowColor, alpha: 0.5 });
+      g.ellipse(cx + 45 * scale, cy + 25 * scale, 55 * scale, 15 * scale);
+      g.fill();
+      
+      // Pink/orange highlights on sunny side
+      g.fill({ color: 0xFFD4BE, alpha: 0.4 });
+      g.circle(cx + 25 * scale, cy - 15 * scale, 20 * scale);
+      g.circle(cx + 60 * scale, cy - 10 * scale, 18 * scale);
+      g.fill();
     };
-
-    drawPalm(600, height - 220);
-    drawPalm(1350, height - 230);
+    
+    // Distant small clouds (pink tinted near sun)
+    drawPuffyCloud(150, skyHeight * 0.25, 0.5, 0.8);
+    drawPuffyCloud(550, skyHeight * 0.15, 0.6, 0.7);
+    
+    // Main clouds
+    for (let i = 0; i < width; i += 800) {
+      const warmth = i < 800 ? 0.7 : 0.3;
+      drawPuffyCloud(i + 200, skyHeight * 0.5 + (i % 50), 1.0, warmth);
+    }
+    
+    // Clouds near horizon (more pink/orange)
+    for (let i = 0; i < width; i += 600) {
+      drawPuffyCloud(i + 400, skyHeight * 0.75, 0.7, 0.6);
+    }
+    
+    // 4. OCEAN - Calm teal/turquoise water
+    const oceanTop = skyHeight;
+    
+    // Ocean gradient (lighter at horizon, darker below)
+    g.fill(0x5DADE2); // Light teal at horizon
+    g.rect(0, oceanTop, width, 40);
+    g.fill();
+    
+    g.fill(0x48A5C9);
+    g.rect(0, oceanTop + 40, width, 40);
+    g.fill();
+    
+    g.fill(0x3498B8);
+    g.rect(0, oceanTop + 80, width, 50);
+    g.fill();
+    
+    g.fill(0x2980A8);
+    g.rect(0, oceanTop + 130, width, height - oceanTop - 130);
+    g.fill();
+    
+    // Sun reflection on water
+    g.fill({ color: 0xFFE4B5, alpha: 0.25 });
+    g.ellipse(sunX, oceanTop + 20, 80, 15);
+    g.fill();
+    g.fill({ color: 0xFFD700, alpha: 0.15 });
+    g.ellipse(sunX, oceanTop + 50, 60, 10);
+    g.fill();
+    
+    // Gentle wave highlights (white foam lines)
+    for (let layer = 0; layer < 4; layer++) {
+      const waveY = oceanTop + 30 + layer * 35;
+      g.fill({ color: 0xFFFFFF, alpha: 0.3 - layer * 0.05 });
+      for (let x = 0; x < width + 80; x += 120) {
+        const offset = layer * 30 + (x % 40);
+        g.ellipse(x + offset, waveY, 50, 6);
+      }
+      g.fill();
+    }
+    
+    // 5. DISTANT TROPICAL ISLAND with Palm Trees
+    const drawTropicalIsland = (ix: number, iy: number, w: number, hasLargePalm: boolean = true) => {
+      // Island base (lush green mound)
+      const gradient1 = 0x3CB371; // Medium sea green
+      const gradient2 = 0x228B22; // Forest green
+      
+      g.fill(gradient1);
+      g.ellipse(ix, iy + 10, w / 2, 25);
+      g.fill();
+      
+      g.fill(gradient2);
+      g.ellipse(ix, iy, w / 2 - 10, 35);
+      g.fill();
+      
+      // Highlight on island
+      g.fill({ color: 0x90EE90, alpha: 0.5 });
+      g.ellipse(ix - w / 6, iy - 15, 20, 15);
+      g.fill();
+      
+      if (hasLargePalm) {
+        // Palm tree trunk (curved)
+        g.stroke({ color: 0x8B6914, width: 8 });
+        g.moveTo(ix, iy - 20);
+        g.quadraticCurveTo(ix + 15, iy - 50, ix + 5, iy - 80);
+        g.stroke();
+        
+        // Trunk texture
+        g.stroke({ color: 0x6B4F14, width: 2 });
+        for (let t = 0; t < 5; t++) {
+          const ty = iy - 25 - t * 12;
+          g.moveTo(ix - 3 + t, ty);
+          g.lineTo(ix + 7 + t, ty);
+          g.stroke();
+        }
+        
+        // Coconuts
+        g.fill(0x8B4513);
+        g.circle(ix + 3, iy - 75, 4);
+        g.circle(ix + 8, iy - 73, 4);
+        g.fill();
+        
+        // Palm fronds
+        g.fill(0x228B22);
+        const frondAngles = [-0.8, -0.4, 0, 0.4, 0.8, 1.2, -1.2];
+        for (const angle of frondAngles) {
+          const fx = ix + 5;
+          const fy = iy - 80;
+          g.moveTo(fx, fy);
+          g.quadraticCurveTo(
+            fx + Math.cos(angle - 0.3) * 25,
+            fy + Math.sin(angle - 0.3) * 20 - 10,
+            fx + Math.cos(angle) * 45,
+            fy + Math.sin(angle) * 35
+          );
+          g.quadraticCurveTo(
+            fx + Math.cos(angle + 0.3) * 25,
+            fy + Math.sin(angle + 0.3) * 20 - 5,
+            fx, fy
+          );
+          g.fill();
+        }
+        
+        // Palm frond highlights
+        g.fill({ color: 0x32CD32, alpha: 0.6 });
+        for (let i = 0; i < 3; i++) {
+          const angle = -0.4 + i * 0.4;
+          const fx = ix + 5;
+          const fy = iy - 80;
+          g.ellipse(fx + Math.cos(angle) * 25, fy + Math.sin(angle) * 15 - 5, 10, 5);
+        }
+        g.fill();
+      }
+    };
+    
+    // Place islands at different distances
+    drawTropicalIsland(700, oceanTop + 50, 100, true);
+    drawTropicalIsland(1800, oceanTop + 60, 80, true);
+    drawTropicalIsland(3200, oceanTop + 45, 120, true);
+    drawTropicalIsland(4800, oceanTop + 55, 90, true);
+    
+    // 6. FLOATING WOODEN PLATFORMS/LOGS in water
+    const drawFloatingLog = (lx: number, ly: number, logWidth: number) => {
+      // Log shadow in water
+      g.fill({ color: 0x1a5276, alpha: 0.4 });
+      g.ellipse(lx, ly + 8, logWidth / 2 + 5, 8);
+      g.fill();
+      
+      // Main log body
+      g.fill(0x6B4423); // Rich brown
+      g.roundRect(lx - logWidth / 2, ly - 6, logWidth, 14, 4);
+      g.fill();
+      
+      // Log wood grain/texture
+      g.stroke({ color: 0x5A3921, width: 1 });
+      for (let i = 0; i < 3; i++) {
+        g.moveTo(lx - logWidth / 2 + 10 + i * (logWidth / 4), ly - 4);
+        g.lineTo(lx - logWidth / 2 + 15 + i * (logWidth / 4), ly + 5);
+        g.stroke();
+      }
+      
+      // Log highlight
+      g.fill({ color: 0x8B5A2B, alpha: 0.6 });
+      g.roundRect(lx - logWidth / 2 + 2, ly - 5, logWidth - 4, 5, 2);
+      g.fill();
+      
+      // End rings
+      g.fill(0x5A3921);
+      g.ellipse(lx - logWidth / 2 + 2, ly, 4, 6);
+      g.ellipse(lx + logWidth / 2 - 2, ly, 4, 6);
+      g.fill();
+    };
+    
+    // Scatter floating logs/platforms
+    for (let i = 0; i < width; i += 400) {
+      const logY = oceanTop + 100 + (i % 60);
+      drawFloatingLog(i + 150, logY, 70 + (i % 30));
+    }
+    
+    // 7. SEAGULL swimming in water
+    const drawSeagull = (sx: number, sy: number) => {
+      // Body reflection
+      g.fill({ color: 0x2980A8, alpha: 0.3 });
+      g.ellipse(sx, sy + 8, 15, 5);
+      g.fill();
+      
+      // Body
+      g.fill(0xFFFFFF);
+      g.ellipse(sx, sy, 12, 7);
+      g.fill();
+      
+      // Head
+      g.fill(0xFFFFFF);
+      g.circle(sx + 10, sy - 3, 5);
+      g.fill();
+      
+      // Beak
+      g.fill(0xFFA500);
+      g.moveTo(sx + 15, sy - 3);
+      g.lineTo(sx + 20, sy - 2);
+      g.lineTo(sx + 15, sy - 1);
+      g.closePath();
+      g.fill();
+      
+      // Eye
+      g.fill(0x000000);
+      g.circle(sx + 11, sy - 4, 1);
+      g.fill();
+      
+      // Wing
+      g.fill(0xE8E8E8);
+      g.ellipse(sx - 2, sy - 2, 8, 4);
+      g.fill();
+    };
+    
+    // Place seagulls swimming
+    drawSeagull(500, oceanTop + 150);
+    drawSeagull(1600, oceanTop + 130);
+    drawSeagull(3000, oceanTop + 145);
+    drawSeagull(4400, oceanTop + 135);
+    
+    // 8. SANDY BEACH - Warm tan foreground
+    const sandY = height - 100;
+    
+    // Base sand color
+    g.fill(0xDEB887); // Burlywood
+    g.rect(0, sandY, width, 100);
+    g.fill();
+    
+    // Sand dunes with gradient effect
+    g.fill(0xD2B48C);
+    for (let x = 0; x < width; x += 180) {
+      g.ellipse(x + 90, sandY + 5, 100, 25);
+    }
+    g.fill();
+    
+    // Lighter sand highlights
+    g.fill({ color: 0xF5DEB3, alpha: 0.7 });
+    for (let x = 0; x < width; x += 220) {
+      g.ellipse(x + 110, sandY + 15, 60, 15);
+    }
+    g.fill();
+    
+    // Darker sand shadows/wet sand near water
+    g.fill({ color: 0xA0826D, alpha: 0.4 });
+    g.rect(0, sandY, width, 15);
+    g.fill();
+    
+    // Water edge foam
+    g.fill({ color: 0xFFFFFF, alpha: 0.5 });
+    for (let x = 0; x < width; x += 80) {
+      g.ellipse(x + 40, sandY + 5, 35, 6);
+    }
+    g.fill();
+    
+    // Scattered seashells
+    g.fill(0xFFF5EE);
+    for (let x = 80; x < width; x += 250) {
+      g.circle(x, sandY + 40 + (x % 25), 4);
+      g.ellipse(x + 60, sandY + 35, 5, 3);
+      g.circle(x + 120, sandY + 50, 3);
+    }
+    g.fill();
+    
+    // Small starfish
+    g.fill(0xFA8072);
+    for (let x = 200; x < width; x += 600) {
+      const starX = x;
+      const starY = sandY + 55;
+      for (let i = 0; i < 5; i++) {
+        const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+        g.moveTo(starX, starY);
+        g.lineTo(starX + Math.cos(angle) * 8, starY + Math.sin(angle) * 8);
+        g.lineTo(starX + Math.cos(angle + 0.3) * 4, starY + Math.sin(angle + 0.3) * 4);
+        g.closePath();
+      }
+      g.fill();
+    }
   }
 
   private drawSkullCaveBackground(g: PIXI.Graphics, level: LevelData) {
     const width = level.width;
     const height = level.height;
 
-    // 1. Dark Cave Background
-    g.fill(0x1a1a2e);
-    g.rect(0, 0, width, height);
-    g.fill();
+    // 1. Deep Cave Gradient
+    const caveColors = [0x0d0d15, 0x151525, 0x1a1a30, 0x20203a];
+    caveColors.forEach((color, i) => {
+      g.fill(color);
+      g.rect(0, (i / caveColors.length) * height, width, height / caveColors.length + 2);
+      g.fill();
+    });
 
-    // 2. Rock Texture / Cracks
-    g.stroke({ color: 0x2a2a4e, width: 2 });
-    for (let i = 0; i < 20; i++) {
-      const cx = Math.random() * width;
-      const cy = Math.random() * height;
-      g.moveTo(cx, cy);
-      g.lineTo(cx + 20 + Math.random() * 30, cy + Math.random() * 20 - 10);
+    // 2. Rock Wall Texture with depth layers
+    for (let layer = 0; layer < 3; layer++) {
+      const layerAlpha = 0.2 + layer * 0.1;
+      const baseColor = 0x2a2a4e + layer * 0x101010;
+      
+      // Cracks
+      g.stroke({ color: baseColor, width: 2 - layer * 0.5, alpha: layerAlpha });
+      for (let i = 0; i < 15; i++) {
+        const cx = (Math.random() * width + layer * 50) % width;
+        const cy = Math.random() * height;
+        g.moveTo(cx, cy);
+        const branches = 2 + Math.floor(Math.random() * 3);
+        for (let b = 0; b < branches; b++) {
+          g.lineTo(cx + (Math.random() - 0.5) * 50, cy + Math.random() * 40);
+        }
+        g.stroke();
+      }
+    }
+
+    // 3. Stalactites with dripping water effect
+    for (let i = 0; i < width; i += 80 + Math.random() * 60) {
+      const h = 60 + Math.random() * 120;
+      const baseWidth = 20 + Math.random() * 30;
+      
+      // Main stalactite
+      g.fill(0x3a3a5e);
+      g.moveTo(i, 0);
+      g.lineTo(i + baseWidth / 2, h);
+      g.lineTo(i + baseWidth, 0);
+      g.closePath();
+      g.fill();
+      
+      // Highlight edge
+      g.stroke({ color: 0x4a4a6e, width: 2 });
+      g.moveTo(i + baseWidth * 0.3, 0);
+      g.lineTo(i + baseWidth / 2, h - 5);
+      g.stroke();
+      
+      // Water droplet
+      if (Math.random() > 0.6) {
+        g.fill({ color: 0x4FC3F7, alpha: 0.6 });
+        g.circle(i + baseWidth / 2, h + 5, 3);
+        g.fill();
+      }
+    }
+
+    // 4. Stalagmites with mineral deposits
+    for (let i = 30; i < width; i += 100 + Math.random() * 60) {
+      const h = 50 + Math.random() * 80;
+      const baseWidth = 30 + Math.random() * 25;
+      
+      g.fill(0x2a2a45);
+      g.moveTo(i, height);
+      g.lineTo(i + baseWidth / 2, height - h);
+      g.lineTo(i + baseWidth, height);
+      g.closePath();
+      g.fill();
+      
+      // Mineral streak
+      g.stroke({ color: 0x8B4513, width: 2, alpha: 0.4 });
+      g.moveTo(i + baseWidth * 0.4, height);
+      g.lineTo(i + baseWidth * 0.5, height - h * 0.8);
       g.stroke();
     }
-
-    // 3. Stalactites (Hanging)
-    g.fill(0x2e2e4e);
-    for (let i = 0; i < width; i += 100 + Math.random() * 100) {
-      const h = 50 + Math.random() * 150;
-      g.moveTo(i, 0);
-      g.lineTo(i + 30, h);
-      g.lineTo(i + 60, 0);
-      g.closePath();
-      g.fill();
-    }
-
-    // 4. Stalagmites (Ground) - Background layer
-    g.fill(0x252545);
-    for (let i = 50; i < width; i += 120 + Math.random() * 80) {
-      const h = 40 + Math.random() * 100;
-      g.moveTo(i, height);
-      g.lineTo(i + 25, height - h);
-      g.lineTo(i + 50, height);
-      g.closePath();
-      g.fill();
-    }
     
-    // 5. Glowing Crystals
-    const colors = [0x00ffff, 0xff00ff, 0x00ff00];
-    for (let i = 0; i < 15; i++) {
-      const cx = Math.random() * width;
-      const cy = Math.random() * height;
-      const color = colors[Math.floor(Math.random() * colors.length)];
+    // 5. Glowing Crystals with enhanced effects
+    const crystalColors = [
+      { main: 0x00ffff, glow: 0x00e5e5 },
+      { main: 0xff00ff, glow: 0xe500e5 },
+      { main: 0x00ff88, glow: 0x00e577 },
+      { main: 0xff6600, glow: 0xe55c00 }
+    ];
+    
+    for (let i = 0; i < 20; i++) {
+      const cx = 100 + (i * (width - 200) / 20) + Math.random() * 50;
+      const cy = 100 + Math.random() * (height - 200);
+      const crystal = crystalColors[Math.floor(Math.random() * crystalColors.length)];
+      const size = 10 + Math.random() * 15;
       
-      g.fill({ color: color, alpha: 0.6 });
-      g.moveTo(cx, cy);
-      g.lineTo(cx + 10, cy - 20);
-      g.lineTo(cx + 20, cy);
-      g.lineTo(cx + 10, cy + 20);
+      // Outer glow
+      g.fill({ color: crystal.glow, alpha: 0.15 });
+      g.circle(cx, cy, size * 3);
+      g.fill();
+      
+      // Inner glow
+      g.fill({ color: crystal.main, alpha: 0.3 });
+      g.circle(cx, cy, size * 1.5);
+      g.fill();
+      
+      // Crystal shape
+      g.fill({ color: crystal.main, alpha: 0.8 });
+      g.moveTo(cx, cy - size);
+      g.lineTo(cx + size * 0.6, cy);
+      g.lineTo(cx, cy + size);
+      g.lineTo(cx - size * 0.6, cy);
       g.closePath();
       g.fill();
       
-      // Glow
-      g.fill({ color: color, alpha: 0.2 });
-      g.circle(cx + 10, cy, 30);
+      // Highlight
+      g.fill({ color: 0xFFFFFF, alpha: 0.5 });
+      g.moveTo(cx - size * 0.2, cy - size * 0.6);
+      g.lineTo(cx + size * 0.1, cy - size * 0.2);
+      g.lineTo(cx - size * 0.3, cy);
+      g.closePath();
       g.fill();
     }
 
-    // 6. Skull Outline in background (subtle)
-    g.stroke({ color: 0x333355, width: 10, alpha: 0.3 });
+    // 6. Giant Skull carved into wall
     const skullX = width / 2;
-    const skullY = height / 2;
-    g.circle(skullX, skullY, 150); // Head
-    g.stroke();
-    g.rect(skullX - 50, skullY + 100, 25, 40); // Teeth
-    g.rect(skullX, skullY + 100, 25, 40);
-    g.rect(skullX + 50, skullY + 100, 25, 40);
-    g.stroke();
+    const skullY = height / 2 - 50;
+    
+    // Skull shadow/depth
+    g.fill({ color: 0x101020, alpha: 0.4 });
+    g.circle(skullX + 5, skullY + 5, 160);
+    g.fill();
+    
+    // Skull outline
+    g.fill({ color: 0x252540, alpha: 0.3 });
+    g.circle(skullX, skullY, 150);
+    g.fill();
+    
+    // Eye sockets (glowing ominously)
+    g.fill({ color: 0xff0000, alpha: 0.3 });
+    g.circle(skullX - 50, skullY - 20, 40);
+    g.circle(skullX + 50, skullY - 20, 40);
+    g.fill();
+    g.fill({ color: 0xff3333, alpha: 0.15 });
+    g.circle(skullX - 50, skullY - 20, 55);
+    g.circle(skullX + 50, skullY - 20, 55);
+    g.fill();
+    
+    // Nose cavity
+    g.fill({ color: 0x151525, alpha: 0.5 });
+    g.moveTo(skullX, skullY + 30);
+    g.lineTo(skullX - 20, skullY + 60);
+    g.lineTo(skullX + 20, skullY + 60);
+    g.closePath();
+    g.fill();
+    
+    // Teeth
+    g.fill({ color: 0x353550, alpha: 0.4 });
+    for (let t = -2; t <= 2; t++) {
+      g.rect(skullX + t * 25 - 10, skullY + 80, 20, 40);
+    }
+    g.fill();
+
+    // 7. Fog/mist at bottom
+    for (let i = 0; i < 5; i++) {
+      const fogAlpha = 0.1 - i * 0.015;
+      g.fill({ color: 0x4a4a6a, alpha: fogAlpha });
+      for (let x = 0; x < width; x += 80) {
+        g.ellipse(x + 40, height - 30 - i * 15, 60, 25);
+      }
+      g.fill();
+    }
   }
 
   private drawTreasureGalleonBackground(g: PIXI.Graphics, level: LevelData) {

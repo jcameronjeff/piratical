@@ -34,11 +34,18 @@ export class SinglePlayerGame {
   };
   
   private onReturnToMenu: (() => void) | null = null;
+  private onLevelComplete: ((levelId: number) => void) | null = null;
 
-  constructor(renderer: GameRenderer, onReturnToMenu?: () => void, characterType: CharacterType = CharacterType.PIRATE) {
+  constructor(
+    renderer: GameRenderer, 
+    onReturnToMenu?: () => void, 
+    characterType: CharacterType = CharacterType.PIRATE,
+    onLevelComplete?: (levelId: number) => void
+  ) {
     this.physics = new PhysicsEngine();
     this.renderer = renderer;
     this.onReturnToMenu = onReturnToMenu || null;
+    this.onLevelComplete = onLevelComplete || null;
     this.characterType = characterType;
     
     // Load progress from localStorage
@@ -109,7 +116,7 @@ export class SinglePlayerGame {
     }
   }
 
-  public async start() {
+  public async start(levelId?: number) {
     await this.renderer.initialize(document.body);
     this.renderer.setPhysics(this.physics);
     
@@ -122,8 +129,8 @@ export class SinglePlayerGame {
     // Initialize naval battle
     this.navalBattle = new NavalBattle(this.renderer.getApp());
     
-    // Start with a naval battle before the first level
-    const targetLevel = this.progress.currentLevel;
+    // Use provided levelId or default to current progress
+    const targetLevel = levelId || this.progress.currentLevel;
     const level = getLevelById(targetLevel);
     
     await this.startNavalBattle(level?.name || 'Unknown Waters', true, async () => {
@@ -136,6 +143,9 @@ export class SinglePlayerGame {
   private async startNavalBattle(levelName: string, isIntro: boolean, onComplete: () => void) {
     this.inNavalBattle = true;
     this.running = false;
+    
+    // Hide renderer effects so naval battle is visible
+    this.renderer.hideEffects();
     
     // Remove key listeners temporarily (naval battle has its own)
     window.removeEventListener('keydown', this.handleKeyDown);
@@ -321,6 +331,7 @@ export class SinglePlayerGame {
 
     // Setup renderer
     this.renderer.clearWorld();
+    this.renderer.showEffects(); // Show visual effects when level is active
     this.renderer.drawMap(this.physics);
     this.renderer.setupUI(level.name);
 
@@ -369,19 +380,22 @@ export class SinglePlayerGame {
     const player = this.state.players.get(this.playerId);
     const doubloons = player?.doubloons || 0;
     const time = Date.now() - this.levelStartTime;
+    const completedLevelId = this.currentLevel.id;
 
     // Update progress
     this.progress.totalDoubloons += doubloons;
     
     // Record best time
-    if (!this.progress.bestTimes[this.currentLevel.id] || time < this.progress.bestTimes[this.currentLevel.id]) {
-      this.progress.bestTimes[this.currentLevel.id] = time;
+    if (!this.progress.bestTimes[completedLevelId] || time < this.progress.bestTimes[completedLevelId]) {
+      this.progress.bestTimes[completedLevelId] = time;
     }
 
     // Unlock next level
-    const nextLevel = getNextLevel(this.currentLevel.id);
+    const nextLevel = getNextLevel(completedLevelId);
     if (nextLevel && !this.progress.unlockedLevels.includes(nextLevel.id)) {
       this.progress.unlockedLevels.push(nextLevel.id);
+      // Update current level to next
+      this.progress.currentLevel = nextLevel.id;
     }
 
     this.saveProgress();
@@ -389,13 +403,21 @@ export class SinglePlayerGame {
     // Show completion message
     this.renderer.showMessage(`LEVEL COMPLETE!\n${doubloons} Doubloons`, 2000);
 
-    // Wait then load next level or return to menu
+    // Wait for message to display
     await new Promise(resolve => setTimeout(resolve, 2500));
 
+    // Stop the current game
+    this.running = false;
+    this.stop();
+
+    // If we have a level complete callback (campaign map integration), use it
+    if (this.onLevelComplete) {
+      this.onLevelComplete(completedLevelId);
+      return;
+    }
+
+    // Fallback: direct transition (for when not using campaign map)
     if (nextLevel) {
-      // Stop the current game loop
-      this.running = false;
-      
       // Clear the current level display
       this.renderer.clearWorld();
       
@@ -410,7 +432,6 @@ export class SinglePlayerGame {
       this.renderer.showMessage("🏴‍☠️ ADVENTURE COMPLETE! 🏴‍☠️\nYe be a true pirate!", 5000);
       await new Promise(resolve => setTimeout(resolve, 5000));
       if (this.onReturnToMenu) {
-        this.stop();
         this.onReturnToMenu();
       }
     }

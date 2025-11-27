@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { getSoundManager, SoundEffect } from '../sound';
 
 export interface NavalBattleState {
   playerShip: Ship;
@@ -195,8 +196,8 @@ export class NavalBattle {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
     
-    // Clean up
-    this.container.removeChildren();
+    // Clean up - only remove children from child containers, NOT from main container
+    // Removing children from main container would disconnect the child containers entirely
     this.backgroundContainer.removeChildren();
     this.shipsContainer.removeChildren();
     this.projectilesContainer.removeChildren();
@@ -295,6 +296,9 @@ export class NavalBattle {
     const ship = this.state.playerShip;
     const bobY = Math.sin(ship.bobPhase) * 4;
     
+    // Play cannon fire sound
+    getSoundManager().playSound(SoundEffect.CANNON_FIRE);
+    
     // Fire a broadside from the cannon positions on the ship's side
     const cannonOffsets = [-40, -18, 4, 26];  // Match cannon port positions
     for (const offset of cannonOffsets) {
@@ -325,25 +329,34 @@ export class NavalBattle {
 
   private updateEnemyAI() {
     const enemy = this.state.enemyShip;
-    const player = this.state.playerShip;
     
-    // Move to match player's y position loosely
-    const targetY = player.y + (Math.sin(this.state.frame * 0.02) * 30);
+    // Independent patrol pattern - sine wave movement, NOT tracking player
+    // This creates natural opportunities to hit each other
+    const patrolSpeed = 0.015;
+    const patrolRange = 50;
+    
+    // Use frame count for smooth, predictable movement
+    const targetY = WATER_LINE + Math.sin(this.state.frame * patrolSpeed) * patrolRange;
+    
+    // Smooth movement toward target
     const diff = targetY - enemy.y;
-    enemy.velocity.y = Math.sign(diff) * Math.min(Math.abs(diff) * 0.03, 1.5);
+    enemy.velocity.y = diff * 0.05;
     enemy.y += enemy.velocity.y;
     enemy.y = Math.max(WATER_LINE - 60, Math.min(WATER_LINE + 60, enemy.y));
     
-    // Fire at player
-    if (enemy.fireCooldown <= 0 && Math.random() < 0.02) {
+    // Fire at player - more aggressive firing
+    if (enemy.fireCooldown <= 0) {
       this.fireEnemyCannon();
-      enemy.fireCooldown = 90 + Math.random() * 60;
+      enemy.fireCooldown = 70 + Math.random() * 50;  // Faster firing
     }
   }
 
   private fireEnemyCannon() {
     const ship = this.state.enemyShip;
     const bobY = Math.sin(ship.bobPhase) * 4;
+    
+    // Play cannon fire sound
+    getSoundManager().playSound(SoundEffect.CANNON_FIRE);
     
     // Enemy fires from their port side (facing player)
     const cannonOffsets = [40, 18, -4, -26];  // Mirrored positions

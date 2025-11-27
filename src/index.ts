@@ -2,19 +2,45 @@ import { Game } from './game/game';
 import { SinglePlayerGame } from './game/singleplayer';
 import { GameRenderer } from './game/renderer';
 import { MainMenu } from './menu';
-import { GameMode, CharacterType } from './types';
+import { CampaignMap } from './campaignMap';
+import { GameMode, CharacterType, CampaignProgress } from './types';
 
 import './style.css';
 
 let currentGame: Game | SinglePlayerGame | null = null;
 let renderer: GameRenderer | null = null;
 let menu: MainMenu | null = null;
+let campaignMap: CampaignMap | null = null;
+let selectedCharacterType: CharacterType = CharacterType.PIRATE;
+
+function loadProgress(): CampaignProgress {
+  try {
+    const saved = localStorage.getItem('piratical_progress');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.warn('Failed to load progress:', e);
+  }
+  return {
+    currentLevel: 1,
+    totalDoubloons: 0,
+    unlockedLevels: [1],
+    bestTimes: {}
+  };
+}
 
 function showMenu() {
   // Clean up any existing game
   if (currentGame) {
     currentGame.stop();
     currentGame = null;
+  }
+
+  // Hide campaign map if showing
+  if (campaignMap) {
+    campaignMap.hide();
+    campaignMap = null;
   }
 
   // Clear the canvas if it exists
@@ -37,21 +63,66 @@ function showMenu() {
   menu.show();
 }
 
+function showCampaignMap(justCompletedLevel?: number) {
+  // Hide any existing map
+  if (campaignMap) {
+    campaignMap.hide();
+  }
+
+  const progress = loadProgress();
+  
+  campaignMap = new CampaignMap(
+    progress,
+    (levelId: number) => startCampaignLevel(levelId),
+    () => showMenu()
+  );
+  
+  campaignMap.show(justCompletedLevel);
+}
+
+async function startCampaignLevel(levelId: number) {
+  // Hide campaign map
+  if (campaignMap) {
+    campaignMap.hide();
+    campaignMap = null;
+  }
+
+  // Create renderer if needed
+  if (!renderer) {
+    renderer = new GameRenderer();
+  }
+
+  // Create and start game
+  currentGame = new SinglePlayerGame(
+    renderer, 
+    showMenu, 
+    selectedCharacterType,
+    (completedLevelId: number) => {
+      // Callback when level is complete - show map
+      showCampaignMap(completedLevelId);
+    }
+  );
+  
+  await currentGame.start(levelId);
+}
+
 async function handleModeSelect(mode: GameMode, levelId?: number, roomCode?: string, characterType?: CharacterType) {
   if (menu) {
     menu.hide();
   }
 
-  renderer = new GameRenderer();
-  const selectedCharacter = characterType || CharacterType.PIRATE;
+  selectedCharacterType = characterType || CharacterType.PIRATE;
 
   if (mode === 'campaign') {
-    currentGame = new SinglePlayerGame(renderer, showMenu, selectedCharacter);
-    await currentGame.start();
-    if (levelId) {
-      await currentGame.loadLevel(levelId);
-    }
+    // Show campaign map instead of going directly to game
+    showCampaignMap();
+    return;
   } else if (mode === 'multiplayer') {
+    // Create renderer for multiplayer
+    if (!renderer) {
+      renderer = new GameRenderer();
+    }
+    
     const code = roomCode || `SHIP-${Math.random().toString().slice(2, 6)}`;
     
     // UI Overlay for Room Code
@@ -66,7 +137,7 @@ async function handleModeSelect(mode: GameMode, levelId?: number, roomCode?: str
     `;
     document.body.appendChild(overlay);
 
-    currentGame = new Game(renderer, code, showMenu, selectedCharacter);
+    currentGame = new Game(renderer, code, showMenu, selectedCharacterType);
     await currentGame.start();
   }
 }
