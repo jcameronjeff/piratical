@@ -377,6 +377,13 @@ export const CAMPAIGN_LEVELS: LevelData[] = [
     requiredDoubloons: 5,
     // Sword chest - mid-level on the ship, jump from platform at y:400
     swordChest: { x: 730, y: 320 },
+    // Moving platforms - swinging ship cargo
+    movingPlatforms: [
+      // Horizontal cargo platform bridging gap between deck sections
+      { x: 350, y: 540, w: 80, h: 20, moveX: 60, speed: 0.03 },
+      // Vertical lift to upper level
+      { x: 1050, y: 350, w: 80, h: 20, moveY: 100, speed: 0.025, phase: 1 },
+    ],
   },
   {
     id: 4,
@@ -483,6 +490,15 @@ export const CAMPAIGN_LEVELS: LevelData[] = [
     requiredDoubloons: 10,
     // Sword chest - in the mid section, jump from platform at y:420
     swordChest: { x: 980, y: 340 },
+    // Moving platforms - ancient mechanisms in the lair
+    movingPlatforms: [
+      // Horizontal platform over spike pit
+      { x: 250, y: 640, w: 80, h: 20, moveX: 50, speed: 0.035 },
+      // Vertical elevator to mid level
+      { x: 500, y: 450, w: 80, h: 20, moveY: 120, speed: 0.02, phase: 0.5 },
+      // Fast horizontal platform near top
+      { x: 1300, y: 180, w: 100, h: 20, moveX: 80, speed: 0.04, phase: 2 },
+    ],
   },
 ];
 

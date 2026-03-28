@@ -30,7 +30,8 @@ export class SinglePlayerGame {
     left: false,
     right: false,
     jump: false,
-    action: false
+    action: false,
+    dash: false
   };
   
   private onReturnToMenu: (() => void) | null = null;
@@ -80,6 +81,7 @@ export class SinglePlayerGame {
         if (isDown) e.preventDefault();
         break;
       case 'KeyE': case 'KeyZ': this.keys.action = isDown; break;
+      case 'ShiftLeft': case 'ShiftRight': this.keys.dash = isDown; break;
       case 'Escape': 
         if (isDown) this.togglePause(); 
         break;
@@ -213,7 +215,13 @@ export class SinglePlayerGame {
       attackFrame: 0,
       attackCooldown: 0,
       hasSword: false,  // Player starts without sword, must collect from chest
-      characterType: this.characterType
+      characterType: this.characterType,
+      coyoteTimer: 0,
+      wallSliding: false,
+      wallDirection: 0,
+      isDashing: false,
+      dashCooldown: 0,
+      dashTimer: 0
     });
 
     // Create entities from level data
@@ -491,7 +499,8 @@ export class SinglePlayerGame {
       left: this.keys.left,
       right: this.keys.right,
       jump: this.keys.jump,
-      action: this.keys.action
+      action: this.keys.action,
+      dash: this.keys.dash
     };
 
     const frameInputs = new Map<string, Input>();

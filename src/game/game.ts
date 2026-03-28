@@ -29,7 +29,8 @@ export class Game {
     left: false,
     right: false,
     jump: false,
-    action: false
+    action: false,
+    dash: false
   };
 
   constructor(renderer: GameRenderer, roomCode: string, onReturnToMenu?: () => void, characterType: CharacterType = CharacterType.PIRATE) {
@@ -74,6 +75,7 @@ export class Game {
         if (isDown) e.preventDefault();
         break;
       case 'KeyE': case 'KeyZ': this.keys.action = isDown; break;
+      case 'ShiftLeft': case 'ShiftRight': this.keys.dash = isDown; break;
       case 'Escape':
         if (isDown && this.onReturnToMenu) {
           this.stop();
@@ -167,7 +169,13 @@ export class Game {
         attackFrame: 0,
         attackCooldown: 0,
         hasSword: true,  // Multiplayer players start with sword
-        characterType: charType
+        characterType: charType,
+        coyoteTimer: 0,
+        wallSliding: false,
+        wallDirection: 0,
+        isDashing: false,
+        dashCooldown: 0,
+        dashTimer: 0
       });
     }
   }
