@@ -463,6 +463,7 @@ export class GameRenderer {
   private playerSprites: Map<string, PIXI.Container>;
   private entitySprites: Map<string, PIXI.Graphics>;
   private obstacleGraphics: PIXI.Graphics;
+  private movingPlatformGraphics: PIXI.Graphics;
   private backgroundGraphics: PIXI.Graphics;
   private uiContainer: PIXI.Container;
   private pauseMenu: PIXI.Container | null = null;
@@ -502,6 +503,7 @@ export class GameRenderer {
     this.playerSprites = new Map();
     this.entitySprites = new Map();
     this.obstacleGraphics = new PIXI.Graphics();
+    this.movingPlatformGraphics = new PIXI.Graphics();
     this.backgroundGraphics = new PIXI.Graphics();
     this.uiContainer = new PIXI.Container();
     this.worldContainer = new PIXI.Container();
@@ -530,6 +532,7 @@ export class GameRenderer {
     // Add containers in order (back to front)
     this.worldContainer.addChild(this.backgroundGraphics);
     this.worldContainer.addChild(this.obstacleGraphics);
+    this.worldContainer.addChild(this.movingPlatformGraphics);
     
     // Effects layer between world and UI
     this.effectsContainer.addChild(this.particles.getGraphics());
@@ -622,6 +625,44 @@ export class GameRenderer {
       );
       this.obstacleGraphics.fill();
     });
+  }
+
+  private renderMovingPlatforms() {
+    if (!this.physics) return;
+    const movingPlatforms = this.physics.getMovingPlatforms();
+    if (movingPlatforms.length === 0) return;
+
+    this.movingPlatformGraphics.clear();
+    for (const mp of movingPlatforms) {
+      const x = mp.box.pos.x / SCALE;
+      const y = mp.box.pos.y / SCALE;
+      const w = mp.def.w;
+      const h = mp.def.h;
+
+      // Platform body - distinct teal color
+      this.movingPlatformGraphics.fill(0x2E8B57);
+      this.movingPlatformGraphics.rect(x, y, w, h);
+      this.movingPlatformGraphics.fill();
+
+      // Top edge highlight
+      this.movingPlatformGraphics.fill(0x3CB371);
+      this.movingPlatformGraphics.rect(x, y, w, 4);
+      this.movingPlatformGraphics.fill();
+
+      // Arrow indicators showing movement direction
+      this.movingPlatformGraphics.fill(0x1B5E20);
+      const cx = x + w / 2;
+      const cy = y + h / 2;
+      if (mp.def.moveX) {
+        // Horizontal arrows
+        this.movingPlatformGraphics.rect(cx - 8, cy - 2, 16, 4);
+      }
+      if (mp.def.moveY) {
+        // Vertical arrows
+        this.movingPlatformGraphics.rect(cx - 2, cy - 8, 4, 16);
+      }
+      this.movingPlatformGraphics.fill();
+    }
   }
 
   public setupUI(levelName: string) {
@@ -790,6 +831,9 @@ export class GameRenderer {
       this.worldContainer.y = -this.camera.y + shakeOffset.y;
     }
 
+    // Render moving platforms
+    this.renderMovingPlatforms();
+
     // Emit ambient particles based on level
     this.emitAmbientParticles();
 
@@ -896,6 +940,29 @@ export class GameRenderer {
         }
       }
       
+      // === WALL SLIDE PARTICLES ===
+      if (player.wallSliding && this.ambientTimer % 4 === 0) {
+        const wallX = player.wallDirection > 0
+          ? playerX + player.width / 2
+          : playerX - player.width / 2;
+        this.particles.emitDust(wallX, playerY, 2, 0);
+      }
+
+      // === DASH TRAIL ===
+      if (player.isDashing && this.ambientTimer % 2 === 0) {
+        const trailX = player.facingRight ? playerX - 10 : playerX + 10;
+        this.particles.emitSparkle(trailX, playerY, 3, 0x00BFFF);
+      }
+
+      // Dash visual: slight horizontal stretch
+      if (player.isDashing) {
+        sprite.scale.x = (player.facingRight ? 1 : -1) * 1.3;
+        sprite.scale.y = 0.8;
+        sprite.alpha = 0.8;
+      } else {
+        sprite.alpha = 1;
+      }
+
       // Update animation state for next frame
       animState.wasGrounded = player.isGrounded;
       animState.lastVelocityY = player.velocity.y / SCALE;

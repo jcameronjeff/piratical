@@ -9,6 +9,7 @@ export interface Input {
   right: boolean;
   jump: boolean;
   action: boolean;
+  dash: boolean;
 }
 
 export interface PlayerState {
@@ -29,6 +30,12 @@ export interface PlayerState {
   attackCooldown: number; // Frames until can attack again
   hasSword: boolean; // Whether player has collected the sword power-up
   characterType: CharacterType; // Which character sprite to render
+  coyoteTimer: number; // Frames since last grounded (for coyote time)
+  wallSliding: boolean; // Is player sliding down a wall
+  wallDirection: number; // -1 for left wall, 1 for right wall, 0 for none
+  isDashing: boolean; // Is player currently dashing
+  dashCooldown: number; // Frames until can dash again
+  dashTimer: number; // Frames remaining in current dash
 }
 
 export enum EntityType {
@@ -90,6 +97,17 @@ export interface EnemySpawnData {
   facingLeft?: boolean;     // Direction to face (for cannons, skeletons)
 }
 
+export interface MovingPlatform {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  moveX?: number; // Horizontal travel distance
+  moveY?: number; // Vertical travel distance
+  speed: number; // Oscillation speed (radians per frame)
+  phase?: number; // Starting phase offset
+}
+
 export interface LevelData {
   id: number;
   name: string;
@@ -104,6 +122,7 @@ export interface LevelData {
   background?: number;
   requiredDoubloons?: number;
   swordChest?: Vector; // Position of the sword power-up chest
+  movingPlatforms?: MovingPlatform[];
 }
 
 export interface CampaignProgress {
